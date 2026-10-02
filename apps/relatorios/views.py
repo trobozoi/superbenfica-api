@@ -1,7 +1,9 @@
 """Endpoints de relatórios gerenciais (ADMIN e GERENTE).
 
-Os resultados ficam em cache (Redis) por ``CACHE_TTL_RELATORIOS`` segundos,
-com chave composta pelo relatório, filial e parâmetros da consulta.
+Os relatórios históricos ficam em cache (Redis) por ``CACHE_TTL_RELATORIOS``
+segundos, com chave composta pelo relatório, filial e parâmetros da consulta.
+O relatório de estoque baixo não usa cache: ele orienta a reposição e precisa
+refletir o saldo atual.
 """
 
 from typing import Any
@@ -46,17 +48,20 @@ class RelatorioBaseView(APIView):
 
     permission_classes = (IsGestao,)
     nome_relatorio = ""
+    usar_cache = True
 
     def calcular(self, loja_id: int | None, filtros: dict[str, Any]) -> Any:
         """Executa a consulta do relatório (implementado nas subclasses)."""
         raise NotImplementedError
 
     def get(self, request: Request) -> Response:
-        """Retorna o relatório, usando o cache quando disponível."""
+        """Retorna o relatório, usando o cache quando habilitado e disponível."""
         entrada = FiltroRelatorioSerializer(data=request.query_params)
         entrada.is_valid(raise_exception=True)
         filtros = entrada.validated_data
         loja_id = resolver_loja(request.user, filtros.get("loja"))
+        if not self.usar_cache:
+            return Response(self.calcular(loja_id, filtros))
         chave = ":".join(
             str(parte)
             for parte in (
@@ -129,7 +134,10 @@ class PedidosPorStatusView(RelatorioBaseView):
 @extend_schema(
     tags=[TAG],
     summary="Estoque abaixo do mínimo",
-    description="Produtos ativos que precisam de reposição (as datas são ignoradas).",
+    description=(
+        "Produtos ativos que precisam de reposição, com o saldo atual (sem cache). "
+        "Os parâmetros ``inicio``, ``fim`` e ``limite`` são ignorados."
+    ),
     parameters=[FiltroRelatorioSerializer],
     responses=EstoqueBaixoSerializer(many=True),
 )
@@ -137,6 +145,7 @@ class EstoqueBaixoView(RelatorioBaseView):
     """Itens com saldo abaixo do mínimo."""
 
     nome_relatorio = "estoque-baixo"
+    usar_cache = False
 
     def calcular(self, loja_id: int | None, filtros: dict[str, Any]) -> Any:
         """Lista os itens a repor."""

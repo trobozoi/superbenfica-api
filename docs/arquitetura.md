@@ -113,12 +113,12 @@ Os eventos são enviados só depois do commit (`transaction.on_commit`), então 
 
 ## Cache
 
-Os relatórios (`/api/relatorios/*`) ficam em cache no Redis por `CACHE_TTL_RELATORIOS` segundos. A chave combina relatório, filial, período e limite.
+Os relatórios de vendas, produtos mais vendidos e pedidos por status ficam em cache no Redis por `CACHE_TTL_RELATORIOS` segundos. A chave combina relatório, filial, período e limite. O relatório de **estoque baixo não usa cache**: ele orienta a reposição e precisa mostrar o saldo atual.
 
 ## Configuração por ambiente
 
 | Settings | Banco | Redis | Observações |
 |----------|-------|-------|-------------|
 | `dev` | PostgreSQL do `.env` | opcional | `DEBUG=True`, sessão habilitada para o Swagger |
-| `prod` | PostgreSQL do `.env` | obrigatório na prática | HTTPS, HSTS, cookies seguros, falha sem `SECRET_KEY`/`ALLOWED_HOSTS` |
+| `prod` | PostgreSQL do `.env` | **obrigatório** | HTTPS, HSTS, cookies seguros; não inicia sem `SECRET_KEY`, `ALLOWED_HOSTS` ou `REDIS_URL` |
 | `test` | SQLite em memória | em memória | Nunca acessa o Supabase |

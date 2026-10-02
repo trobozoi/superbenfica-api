@@ -83,3 +83,12 @@ def test_resumo_diario():
     ontem = (timezone.localdate() - timedelta(days=1)).isoformat()
     assert resultado == {"data": ontem, "filiais": 0}
     assert cache.get(f"relatorios:resumo:{ontem}")["data"] == ontem
+
+
+def test_estoque_baixo_reflete_saldo_atual_sem_cache(api, gerente, estoque):
+    estoque.quantidade = 1
+    estoque.save()
+    assert len(api(gerente).get("/api/relatorios/estoque-baixo/").data) == 1
+    estoque.quantidade = 50
+    estoque.save()
+    assert api(gerente).get("/api/relatorios/estoque-baixo/").data == []

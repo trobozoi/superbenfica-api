@@ -1,6 +1,6 @@
 """Configurações de produção.
 
-Exige ``DJANGO_SECRET_KEY`` e ``DJANGO_ALLOWED_HOSTS`` definidos, força HTTPS,
+Exige ``DJANGO_SECRET_KEY``, ``DJANGO_ALLOWED_HOSTS`` e ``REDIS_URL`` definidos, força HTTPS,
 cookies seguros e HSTS. O Nginx encerra o TLS e repassa o cabeçalho
 ``X-Forwarded-Proto`` para a aplicação.
 """
@@ -15,6 +15,10 @@ if not base.SECRET_KEY:
     raise ImproperlyConfigured("DJANGO_SECRET_KEY é obrigatória em produção.")
 if not base.ALLOWED_HOSTS or "*" in base.ALLOWED_HOSTS:
     raise ImproperlyConfigured("Defina DJANGO_ALLOWED_HOSTS com hosts explícitos.")
+if not base.REDIS_URL:
+    # Sem Redis, cache, WebSocket e limites de requisição ficam presos a um único
+    # processo e o Celery Beat não executa as tarefas agendadas.
+    raise ImproperlyConfigured("REDIS_URL é obrigatória em produção.")
 
 DEBUG = False
 
