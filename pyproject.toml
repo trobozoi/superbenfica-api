@@ -1,6 +1,6 @@
 [project]
 name = "superbenfica-api"
-version = "1.0.0"
+version = "1.1.0"
 description = "API REST e WebSocket do sistema de gerenciamento de supermercados Super Benfica."
 requires-python = ">=3.12"
 

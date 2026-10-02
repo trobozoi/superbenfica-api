@@ -256,7 +256,7 @@ SPECTACULAR_SETTINGS = {
         "Eventos de pedidos e estoque são publicados no WebSocket "
         "`ws(s)://<host>/ws/lojas/<loja_id>/?token=<access>`."
     ),
-    "VERSION": "1.0.0",
+    "VERSION": "1.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "SCHEMA_PATH_PREFIX": r"/api/",
