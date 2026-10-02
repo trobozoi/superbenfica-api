@@ -30,7 +30,8 @@ Acesse:
 
 | URL | Conteúdo |
 |-----|----------|
-| http://localhost:8000/api/docs/ | Swagger UI (interativo) |
+| http://localhost:8000/ | Página inicial: módulos, perfis, guia rápido e WebSocket |
+| http://localhost:8000/api/docs/ | Swagger UI (interativo, com o tema do Super Benfica) |
 | http://localhost:8000/api/redoc/ | ReDoc |
 | http://localhost:8000/api/schema/ | Schema OpenAPI 3 (YAML) |
 | http://localhost:8000/admin/ | Django Admin |

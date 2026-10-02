@@ -1,0 +1,18 @@
+{% load static %}
+{% comment %}Cabeçalho compartilhado pela página inicial e pelo Swagger. Espera: versao, ambiente, pagina.{% endcomment %}
+<header class="sb-cabecalho">
+  <div class="sb-cabecalho__conteudo">
+    <a class="sb-marca" href="/" aria-label="Super Benfica API, página inicial">
+      <img class="sb-marca__logo" src="{% static 'core/img/favicon.svg' %}" alt="" width="32" height="32">
+      <span class="sb-marca__nome">Super Benfica <span class="sb-marca__sufixo">API</span></span>
+      <span class="sb-selo">v{{ versao }}</span>
+    </a>
+    <nav class="sb-nav" aria-label="Navegação principal">
+      <a href="/"{% if pagina == "inicio" %} aria-current="page"{% endif %}>Início</a>
+      <a href="/api/docs/"{% if pagina == "docs" %} aria-current="page"{% endif %}>Swagger</a>
+      <a href="/api/redoc/">ReDoc</a>
+      <a href="/api/schema/">Schema</a>
+      <a href="/admin/">Admin</a>
+    </nav>
+  </div>
+</header>
