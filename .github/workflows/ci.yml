@@ -1,5 +1,5 @@
 # Pipeline de qualidade: lint -> testes com cobertura -> SonarQube (Quality Gate).
-# Secrets necessários no repositório: SONAR_TOKEN e SONAR_HOST_URL.
+# Análise no SonarQube Cloud (sonarcloud.io). Secret necessário: SONAR_TOKEN.
 # Os testes usam SQLite em memória (config.settings.test); nenhuma credencial de banco é necessária.
 
 name: CI
@@ -46,11 +46,9 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       - name: Quality Gate
         uses: SonarSource/sonarqube-quality-gate-action@v1
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}

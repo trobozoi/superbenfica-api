@@ -80,7 +80,7 @@ pytest                                    # testes + cobertura (coverage.xml)
 sonar-scanner                             # análise no SonarQube (usa sonar-project.properties)
 ```
 
-O pipeline [.github/workflows/ci.yml](.github/workflows/ci.yml) roda lint, testes e SonarQube, e falha o build se o Quality Gate não passar. Para isso, configure os secrets `SONAR_TOKEN` e `SONAR_HOST_URL` no repositório.
+O pipeline [.github/workflows/ci.yml](.github/workflows/ci.yml) roda lint, testes e a análise no **SonarQube Cloud** (organização `trobozoi`), e falha o build se o Quality Gate não passar. Para isso, configure o secret `SONAR_TOKEN` no repositório. Veja [docs/sonarqube.md](docs/sonarqube.md).
 
 ## Documentação
 

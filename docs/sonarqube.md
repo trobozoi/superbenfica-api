@@ -33,10 +33,19 @@ Métricas atuais: **76 testes** e cobertura de **~98%** (meta do Quality Gate: �
 | `config/settings/test.py`: `MD5PasswordHasher` | Hash fraco | Só acelera os testes; o arquivo está fora da análise (`sonar.exclusions`) |
 | `Dockerfile` | Execução do container | Imagem com tag fixa e usuário não-root (`USER app`) |
 
+## SonarQube Cloud (CI)
+
+A análise do CI usa o [SonarQube Cloud](https://sonarcloud.io), gratuito para repositórios públicos.
+
+1. Entre em https://sonarcloud.io com a conta do GitHub e importe a organização `trobozoi`.
+2. Analise o repositório `superbenfica-api`. A chave do projeto fica `trobozoi_superbenfica-api`, igual à do `sonar-project.properties`.
+3. Em *Administration → Analysis Method*, **desative a Automatic Analysis**. O CI já faz a análise com cobertura, e as duas juntas dão conflito.
+4. Gere um token em *My Account → Security* e crie o secret `SONAR_TOKEN` no GitHub (*Settings → Secrets and variables → Actions*).
+
 ## Rodando localmente
 
 ```bash
 docker compose --profile quality up -d sonarqube    # http://localhost:9000 (admin/admin no 1º acesso)
 pytest                                              # gera coverage.xml
-sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.token=<seu token>
+sonar-scanner -Dsonar.host.url=http://localhost:9000 -Dsonar.token=<seu token> -Dsonar.projectKey=superbenfica-api
 ```
