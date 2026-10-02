@@ -1,0 +1,7 @@
+[
+  {"codigo": "SEED-0001", "cliente": "maria.silva@example.com", "loja": "Super Benfica Centro", "status": "PENDENTE", "observacao": "Entregar após as 18h.", "itens": [{"sku": "MRC-0001", "quantidade": 1}, {"sku": "MRC-0002", "quantidade": 2}, {"sku": "LAT-0001", "quantidade": 6}]},
+  {"codigo": "SEED-0002", "cliente": "joao.souza@example.com", "loja": "Super Benfica Centro", "status": "EM_SEPARACAO", "separador": "separador.centro@superbenfica.com.br", "itens": [{"sku": "ACG-0002", "quantidade": 2}, {"sku": "HRT-0002", "quantidade": 1}, {"sku": "BEB-0002", "quantidade": 2}]},
+  {"codigo": "SEED-0003", "cliente": "fernanda.rocha@example.com", "loja": "Super Benfica Centro", "status": "SEPARADO", "separador": "separador.centro@superbenfica.com.br", "itens": [{"sku": "PAD-0001", "quantidade": 1}, {"sku": "LAT-0002", "quantidade": 1}, {"sku": "MRC-0004", "quantidade": 1}]},
+  {"codigo": "SEED-0004", "cliente": "ana.costa@example.com", "loja": "Super Benfica Aldeota", "status": "FINALIZADO", "itens": [{"sku": "LMP-0002", "quantidade": 1}, {"sku": "HIG-0001", "quantidade": 2}, {"sku": "BEB-0001", "quantidade": 6}]},
+  {"codigo": "SEED-0005", "cliente": "juliana.alves@example.com", "loja": "Super Benfica Messejana", "status": "CANCELADO", "observacao": "Cliente desistiu da compra.", "itens": [{"sku": "BEB-0004", "quantidade": 12}, {"sku": "ACG-0003", "quantidade": 1}]}
+]

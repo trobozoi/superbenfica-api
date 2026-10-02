@@ -1,0 +1,7 @@
+[
+  {"email": "admin.rede@superbenfica.com.br", "nome": "Ana Administradora", "telefone": "(85) 99100-0001", "role": "ADMIN", "loja": "Super Benfica Centro"},
+  {"email": "gerente.centro@superbenfica.com.br", "nome": "Gustavo Gerente", "telefone": "(85) 99100-0002", "role": "GERENTE", "loja": "Super Benfica Centro"},
+  {"email": "separador.centro@superbenfica.com.br", "nome": "Sérgio Separador", "telefone": "(85) 99100-0003", "role": "SEPARADOR", "loja": "Super Benfica Centro"},
+  {"email": "caixa.centro@superbenfica.com.br", "nome": "Carla Caixa", "telefone": "(85) 99100-0004", "role": "CAIXA", "loja": "Super Benfica Centro"},
+  {"email": "cliente.demo@superbenfica.com.br", "nome": "Cláudio Cliente", "telefone": "(85) 99100-0005", "role": "CLIENTE", "loja": "Super Benfica Centro"}
+]

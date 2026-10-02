@@ -1,0 +1,39 @@
+[project]
+name = "superbenfica-api"
+version = "1.0.0"
+description = "API REST e WebSocket do sistema de gerenciamento de supermercados Super Benfica."
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore:No directory at:UserWarning",
+    "ignore::DeprecationWarning:daphne",
+]
+addopts = "--cov=apps --cov=config --cov-report=term-missing --cov-report=xml:coverage.xml"
+
+[tool.coverage.run]
+branch = true
+omit = ["*/migrations/*", "config/settings/dev.py", "config/settings/prod.py", "config/wsgi.py", "manage.py"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+# E/F: pycodestyle e pyflakes | I: isort | B: bugbear | UP: pyupgrade
+# S: segurança (bandit) | DJ: boas práticas Django | C90: complexidade
+select = ["E", "F", "I", "B", "UP", "S", "DJ", "C90", "SIM", "RUF"]
+ignore = ["RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]

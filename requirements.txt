@@ -1,0 +1,15 @@
+# Dependências de produção (versões fixadas para builds reprodutíveis)
+Django==5.2.17
+djangorestframework==3.18.1
+djangorestframework_simplejwt==5.5.1
+drf-spectacular==0.30.0
+django-environ==0.14.0
+django-cors-headers==4.9.0
+django-filter==26.1
+psycopg[binary]==3.3.6
+channels==4.3.2
+channels_redis==4.3.0
+daphne==4.2.3
+celery==5.6.3
+redis==8.1.0
+whitenoise==6.12.0
