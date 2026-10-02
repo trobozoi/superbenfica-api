@@ -1,6 +1,6 @@
-# MercaGo - Supermarket Management System
+# Super Benfica - Supermarket Management System
 
-Backend API for the MercaGo supermarket management system built with Django and Django REST Framework.
+Backend API for the Super Benfica supermarket management system built with Django and Django REST Framework.
 
 ## Features
 
