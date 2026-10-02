@@ -1344,7 +1344,8 @@ paths:
   /api/relatorios/estoque-baixo/:
     get:
       operationId: relatorios_estoque_baixo_list
-      description: Produtos ativos que precisam de reposição (as datas são ignoradas).
+      description: Produtos ativos que precisam de reposição, com o saldo atual (sem
+        cache). Os parâmetros ``inicio``, ``fim`` e ``limite`` são ignorados.
       summary: Estoque abaixo do mínimo
       parameters:
       - in: query
