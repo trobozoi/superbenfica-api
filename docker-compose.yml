@@ -1,0 +1,70 @@
+# Ambiente de desenvolvimento do Super Benfica.
+#
+#   docker compose up --build                     -> API + Celery + Redis + Nginx (banco: Supabase do .env)
+#   docker compose --profile local-db up --build  -> + PostgreSQL local (ajuste DB_HOST=db no .env)
+#   docker compose --profile quality up sonarqube -> SonarQube em http://localhost:9000
+#
+# Credenciais vêm sempre do arquivo .env (env_file); nada é escrito aqui.
+
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    # Rede interna do Docker; em produção use rediss:// com senha.
+    REDIS_URL: ${DOCKER_REDIS_URL:-redis://redis:6379/0}
+  depends_on:
+    - redis
+  restart: unless-stopped
+
+services:
+  api:
+    <<: *app
+    command: daphne --bind 0.0.0.0 --port 8000 --proxy-headers config.asgi:application
+    expose:
+      - "8000"
+
+  worker:
+    <<: *app
+    command: celery -A config worker --loglevel=info
+
+  beat:
+    <<: *app
+    command: celery -A config beat --loglevel=info
+
+  redis:
+    image: redis:7.4.1-alpine
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27.3-alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  db:
+    image: postgres:17.2-alpine
+    profiles: ["local-db"]
+    environment:
+      POSTGRES_DB: ${DB_NAME:-postgres}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${LOCAL_DB_PASSWORD:?defina LOCAL_DB_PASSWORD no .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  sonarqube:
+    image: sonarqube:10.7.0-community
+    profiles: ["quality"]
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonar_data:/opt/sonarqube/data
+
+volumes:
+  pgdata:
+  sonar_data:

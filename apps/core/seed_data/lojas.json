@@ -1,0 +1,5 @@
+[
+  {"nome": "Super Benfica Centro", "endereco": "Rua Benfica, 1000 - Centro, Fortaleza/CE", "telefone": "(85) 3200-1000", "horario_abertura": "07:00", "horario_fechamento": "22:00"},
+  {"nome": "Super Benfica Aldeota", "endereco": "Av. Santos Dumont, 2500 - Aldeota, Fortaleza/CE", "telefone": "(85) 3200-2000", "horario_abertura": "07:00", "horario_fechamento": "23:00"},
+  {"nome": "Super Benfica Messejana", "endereco": "Av. Frei Cirilo, 3800 - Messejana, Fortaleza/CE", "telefone": "(85) 3200-3000", "horario_abertura": "08:00", "horario_fechamento": "21:00"}
+]

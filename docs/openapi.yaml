@@ -1,0 +1,3200 @@
+openapi: 3.0.3
+info:
+  title: Super Benfica API
+  version: 1.0.0
+  description: |-
+    API REST do sistema de gerenciamento de supermercados **Super Benfica**.
+
+    ### Autenticação
+    1. Obtenha um par de tokens em `POST /api/auth/token/` com e-mail e senha.
+    2. Clique em **Authorize** e informe o token de acesso (`access`).
+    3. Renove o token expirado em `POST /api/auth/token/refresh/`.
+
+    ### Perfis (roles)
+    | Role | Acesso |
+    |------|--------|
+    | ADMIN | Tudo, em todas as filiais |
+    | GERENTE | Gestão completa da própria filial e relatórios |
+    | SEPARADOR | Consulta de estoque e separação de pedidos da filial |
+    | CAIXA | Consulta de estoque, clientes e criação de pedidos da filial |
+    | CLIENTE | Catálogo e os próprios pedidos e endereços |
+
+    ### Tempo real
+    Eventos de pedidos e estoque são publicados no WebSocket `ws(s)://<host>/ws/lojas/<loja_id>/?token=<access>`.
+paths:
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: Invalida o ``refresh`` informado (blacklist).
+      summary: Logout
+      tags:
+      - Autenticação
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenBlacklistRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenBlacklistRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenBlacklistRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/auth/registrar/:
+    post:
+      operationId: auth_registrar_create
+      description: 'Cadastro público: cria um usuário com role CLIENTE e o respectivo
+        cliente.'
+      summary: Cadastro de cliente
+      tags:
+      - Autenticação
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroClienteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegistroClienteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegistroClienteRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+          description: ''
+  /api/auth/token/:
+    post:
+      operationId: auth_token_create
+      description: Recebe e-mail e senha e retorna os tokens ``access`` e ``refresh``.
+      summary: Obter tokens JWT
+      tags:
+      - Autenticação
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenComPerfilRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenComPerfilRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenComPerfilRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh_create
+      description: Troca um ``refresh`` válido por um novo ``access`` (com rotação).
+      summary: Renovar token de acesso
+      tags:
+      - Autenticação
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/auth/token/verify/:
+    post:
+      operationId: auth_token_verify_create
+      description: Indica se um token ainda é válido.
+      summary: Validar token
+      tags:
+      - Autenticação
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerifyRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/clientes/:
+    get:
+      operationId: clientes_list
+      description: Funcionários veem todos; o CLIENTE vê apenas o próprio cadastro.
+      summary: Listar clientes
+      parameters:
+      - in: query
+        name: loja
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - Clientes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedClienteList'
+          description: ''
+    post:
+      operationId: clientes_create
+      description: ADMIN, GERENTE e CAIXA. Para autocadastro use ``/api/auth/registrar/``.
+      summary: Cadastrar cliente (balcão)
+      tags:
+      - Clientes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClienteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClienteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+          description: ''
+  /api/clientes/{id}/:
+    get:
+      operationId: clientes_retrieve
+      description: Cadastro de clientes.
+      summary: Detalhar cliente
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este cliente.
+        required: true
+      tags:
+      - Clientes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+          description: ''
+    put:
+      operationId: clientes_update
+      description: Cadastro de clientes.
+      summary: Atualizar cliente
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este cliente.
+        required: true
+      tags:
+      - Clientes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ClienteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClienteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+          description: ''
+    patch:
+      operationId: clientes_partial_update
+      description: Cadastro de clientes.
+      summary: Atualizar parcialmente cliente
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este cliente.
+        required: true
+      tags:
+      - Clientes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedClienteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedClienteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedClienteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+          description: ''
+    delete:
+      operationId: clientes_destroy
+      description: ADMIN e GERENTE.
+      summary: Excluir cliente
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este cliente.
+        required: true
+      tags:
+      - Clientes
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/enderecos/:
+    get:
+      operationId: enderecos_list
+      description: 'Filtro: ``cliente``.'
+      summary: Listar endereços
+      parameters:
+      - in: query
+        name: cidade
+        schema:
+          type: string
+      - in: query
+        name: cliente
+        schema:
+          type: integer
+      - in: query
+        name: estado
+        schema:
+          type: string
+          enum:
+          - AC
+          - AL
+          - AM
+          - AP
+          - BA
+          - CE
+          - DF
+          - ES
+          - GO
+          - MA
+          - MG
+          - MS
+          - MT
+          - PA
+          - PB
+          - PE
+          - PI
+          - PR
+          - RJ
+          - RN
+          - RO
+          - RR
+          - RS
+          - SC
+          - SE
+          - SP
+          - TO
+        description: |-
+          * `AC` - Acre
+          * `AL` - Alagoas
+          * `AP` - Amapá
+          * `AM` - Amazonas
+          * `BA` - Bahia
+          * `CE` - Ceará
+          * `DF` - Distrito Federal
+          * `ES` - Espírito Santo
+          * `GO` - Goiás
+          * `MA` - Maranhão
+          * `MT` - Mato Grosso
+          * `MS` - Mato Grosso do Sul
+          * `MG` - Minas Gerais
+          * `PA` - Pará
+          * `PB` - Paraíba
+          * `PR` - Paraná
+          * `PE` - Pernambuco
+          * `PI` - Piauí
+          * `RJ` - Rio de Janeiro
+          * `RN` - Rio Grande do Norte
+          * `RS` - Rio Grande do Sul
+          * `RO` - Rondônia
+          * `RR` - Roraima
+          * `SC` - Santa Catarina
+          * `SP` - São Paulo
+          * `SE` - Sergipe
+          * `TO` - Tocantins
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - in: query
+        name: principal
+        schema:
+          type: boolean
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - Clientes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEnderecoClienteList'
+          description: ''
+    post:
+      operationId: enderecos_create
+      description: Endereços de entrega dos clientes.
+      summary: Cadastrar endereço
+      tags:
+      - Clientes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnderecoClienteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EnderecoClienteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EnderecoClienteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnderecoCliente'
+          description: ''
+  /api/enderecos/{id}/:
+    get:
+      operationId: enderecos_retrieve
+      description: Endereços de entrega dos clientes.
+      summary: Detalhar endereço
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este endereço do cliente.
+        required: true
+      tags:
+      - Clientes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnderecoCliente'
+          description: ''
+    put:
+      operationId: enderecos_update
+      description: Endereços de entrega dos clientes.
+      summary: Atualizar endereço
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este endereço do cliente.
+        required: true
+      tags:
+      - Clientes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnderecoClienteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EnderecoClienteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EnderecoClienteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnderecoCliente'
+          description: ''
+    patch:
+      operationId: enderecos_partial_update
+      description: Endereços de entrega dos clientes.
+      summary: Atualizar parcialmente endereço
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este endereço do cliente.
+        required: true
+      tags:
+      - Clientes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEnderecoClienteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEnderecoClienteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEnderecoClienteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnderecoCliente'
+          description: ''
+    delete:
+      operationId: enderecos_destroy
+      description: Endereços de entrega dos clientes.
+      summary: Excluir endereço
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este endereço do cliente.
+        required: true
+      tags:
+      - Clientes
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/estoques/:
+    get:
+      operationId: estoques_list
+      description: Funcionários veem o estoque da própria filial; ADMIN vê todas.
+        Use ``abaixo_do_minimo=true`` para listar itens a repor.
+      summary: Listar estoque
+      parameters:
+      - in: query
+        name: abaixo_do_minimo
+        schema:
+          type: string
+        description: Somente saldos abaixo do mínimo
+      - in: query
+        name: loja
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - in: query
+        name: produto
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - Estoque
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEstoqueLocalList'
+          description: ''
+    post:
+      operationId: estoques_create
+      description: ADMIN e GERENTE.
+      summary: Cadastrar produto no estoque da filial
+      tags:
+      - Estoque
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstoqueLocalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EstoqueLocalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EstoqueLocalRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstoqueLocal'
+          description: ''
+  /api/estoques/{id}/:
+    get:
+      operationId: estoques_retrieve
+      description: Estoque independente por filial.
+      summary: Detalhar estoque
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este estoque local.
+        required: true
+      tags:
+      - Estoque
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstoqueLocal'
+          description: ''
+    put:
+      operationId: estoques_update
+      description: ADMIN e GERENTE.
+      summary: Atualizar estoque
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este estoque local.
+        required: true
+      tags:
+      - Estoque
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstoqueLocalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EstoqueLocalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EstoqueLocalRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstoqueLocal'
+          description: ''
+    patch:
+      operationId: estoques_partial_update
+      description: Estoque independente por filial.
+      summary: Atualizar parcialmente estoque
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este estoque local.
+        required: true
+      tags:
+      - Estoque
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEstoqueLocalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEstoqueLocalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEstoqueLocalRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstoqueLocal'
+          description: ''
+    delete:
+      operationId: estoques_destroy
+      description: Estoque independente por filial.
+      summary: Remover produto do estoque da filial
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este estoque local.
+        required: true
+      tags:
+      - Estoque
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/estoques/{id}/ajustar/:
+    post:
+      operationId: estoques_ajustar_create
+      description: Entrada (``delta`` positivo) ou saída (``delta`` negativo) manual.
+        Retorna 409 se o saldo ficaria negativo. Publica ``estoque.atualizado`` no
+        WebSocket.
+      summary: Ajustar saldo
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este estoque local.
+        required: true
+      tags:
+      - Estoque
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AjusteEstoqueRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AjusteEstoqueRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AjusteEstoqueRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstoqueLocal'
+          description: ''
+  /api/lojas/:
+    get:
+      operationId: lojas_list
+      description: Qualquer usuário autenticado.
+      summary: Listar filiais
+      parameters:
+      - in: query
+        name: ativa
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - Filiais
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLojaList'
+          description: ''
+    post:
+      operationId: lojas_create
+      description: Somente ADMIN.
+      summary: Cadastrar filial
+      tags:
+      - Filiais
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LojaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LojaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LojaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Loja'
+          description: ''
+  /api/lojas/{id}/:
+    get:
+      operationId: lojas_retrieve
+      description: CRUD de filiais. Escrita restrita a administradores.
+      summary: Detalhar filial
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este loja.
+        required: true
+      tags:
+      - Filiais
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Loja'
+          description: ''
+    put:
+      operationId: lojas_update
+      description: Somente ADMIN.
+      summary: Atualizar filial
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este loja.
+        required: true
+      tags:
+      - Filiais
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LojaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LojaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LojaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Loja'
+          description: ''
+    patch:
+      operationId: lojas_partial_update
+      description: CRUD de filiais. Escrita restrita a administradores.
+      summary: Atualizar parcialmente filial
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este loja.
+        required: true
+      tags:
+      - Filiais
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLojaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLojaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLojaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Loja'
+          description: ''
+    delete:
+      operationId: lojas_destroy
+      description: Somente ADMIN. A filial é desativada (``ativa=false``), não removida.
+      summary: Desativar filial
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este loja.
+        required: true
+      tags:
+      - Filiais
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/pedidos/:
+    get:
+      operationId: pedidos_list
+      description: 'ADMIN vê todos; funcionários veem os da própria filial; CLIENTE
+        vê os próprios. Filtros: ``status``, ``loja``, ``cliente``.'
+      summary: Listar pedidos
+      parameters:
+      - in: query
+        name: cliente
+        schema:
+          type: integer
+      - in: query
+        name: loja
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELADO
+          - EM_SEPARACAO
+          - FINALIZADO
+          - PENDENTE
+          - SEPARADO
+        description: |-
+          * `PENDENTE` - Pendente
+          * `EM_SEPARACAO` - Em separação
+          * `SEPARADO` - Separado
+          * `FINALIZADO` - Finalizado
+          * `CANCELADO` - Cancelado
+      tags:
+      - Pedidos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPedidoList'
+          description: ''
+    post:
+      operationId: pedidos_create
+      description: Baixa o estoque da filial de forma atômica. Retorna **409** se
+        faltar estoque. Publica ``pedido.criado`` no WebSocket.
+      summary: Criar pedido
+      tags:
+      - Pedidos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoCreateRequest'
+            examples:
+              PedidoDeCliente:
+                value:
+                  loja: 1
+                  itens:
+                  - produto: 1
+                    quantidade: 2
+                  observacao: Sem sacolas
+                summary: Pedido de cliente
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PedidoCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PedidoCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+          description: ''
+  /api/pedidos/{id}/:
+    get:
+      operationId: pedidos_retrieve
+      description: Pedidos e ações do fluxo de atendimento.
+      summary: Detalhar pedido
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este pedido.
+        required: true
+      tags:
+      - Pedidos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+          description: ''
+  /api/pedidos/{id}/cancelar/:
+    post:
+      operationId: pedidos_cancelar_create
+      description: Devolve os itens ao estoque. O CLIENTE só cancela pedidos PENDENTES.
+      summary: Cancelar pedido
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este pedido.
+        required: true
+      tags:
+      - Pedidos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+          description: ''
+  /api/pedidos/{id}/finalizar/:
+    post:
+      operationId: pedidos_finalizar_create
+      description: ADMIN, GERENTE e CAIXA. Somente pedidos SEPARADOS.
+      summary: Finalizar pedido
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este pedido.
+        required: true
+      tags:
+      - Pedidos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pedido'
+          description: ''
+  /api/pedidos/{id}/iniciar-separacao/:
+    post:
+      operationId: pedidos_iniciar_separacao_create
+      description: ADMIN, GERENTE e SEPARADOR. Muda o pedido para EM_SEPARACAO.
+      summary: Iniciar separação
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este pedido.
+        required: true
+      tags:
+      - Pedidos
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Separacao'
+          description: ''
+  /api/produtos/:
+    get:
+      operationId: produtos_list
+      description: 'Clientes veem apenas produtos ativos. Filtros: ``categoria``,
+        ``ativo``; busca por nome/SKU.'
+      summary: Listar produtos
+      parameters:
+      - in: query
+        name: ativo
+        schema:
+          type: boolean
+      - in: query
+        name: categoria
+        schema:
+          type: string
+          enum:
+          - ACOUGUE
+          - BEBIDAS
+          - HIGIENE
+          - HORTIFRUTI
+          - LATICINIOS
+          - LIMPEZA
+          - MERCEARIA
+          - PADARIA
+        description: |-
+          * `HORTIFRUTI` - Hortifrúti
+          * `MERCEARIA` - Mercearia
+          * `BEBIDAS` - Bebidas
+          * `LATICINIOS` - Laticínios e frios
+          * `PADARIA` - Padaria
+          * `ACOUGUE` - Açougue
+          * `LIMPEZA` - Limpeza
+          * `HIGIENE` - Higiene e beleza
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - Produtos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProdutoList'
+          description: ''
+    post:
+      operationId: produtos_create
+      description: ADMIN e GERENTE.
+      summary: Cadastrar produto
+      tags:
+      - Produtos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProdutoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProdutoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProdutoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Produto'
+          description: ''
+  /api/produtos/{id}/:
+    get:
+      operationId: produtos_retrieve
+      description: Catálogo de produtos. Leitura para todos; escrita para a gestão.
+      summary: Detalhar produto
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este produto.
+        required: true
+      tags:
+      - Produtos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Produto'
+          description: ''
+    put:
+      operationId: produtos_update
+      description: ADMIN e GERENTE.
+      summary: Atualizar produto
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este produto.
+        required: true
+      tags:
+      - Produtos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProdutoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProdutoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProdutoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Produto'
+          description: ''
+    patch:
+      operationId: produtos_partial_update
+      description: Catálogo de produtos. Leitura para todos; escrita para a gestão.
+      summary: Atualizar parcialmente produto
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este produto.
+        required: true
+      tags:
+      - Produtos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProdutoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProdutoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProdutoRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Produto'
+          description: ''
+    delete:
+      operationId: produtos_destroy
+      description: O produto é desativado (``ativo=false``) para preservar o histórico
+        de pedidos.
+      summary: Desativar produto
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este produto.
+        required: true
+      tags:
+      - Produtos
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/relatorios/estoque-baixo/:
+    get:
+      operationId: relatorios_estoque_baixo_list
+      description: Produtos ativos que precisam de reposição (as datas são ignoradas).
+      summary: Estoque abaixo do mínimo
+      parameters:
+      - in: query
+        name: fim
+        schema:
+          type: string
+          format: date
+        description: Data final (AAAA-MM-DD), inclusiva.
+      - in: query
+        name: inicio
+        schema:
+          type: string
+          format: date
+        description: Data inicial (AAAA-MM-DD), inclusiva.
+      - in: query
+        name: limite
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 10
+      - in: query
+        name: loja
+        schema:
+          type: integer
+          minimum: 1
+        description: Somente ADMIN; gerentes usam a própria filial.
+      tags:
+      - Relatórios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EstoqueBaixo'
+          description: ''
+  /api/relatorios/pedidos-por-status/:
+    get:
+      operationId: relatorios_pedidos_por_status_retrieve
+      description: Quantidade de pedidos em cada status no período.
+      summary: Pedidos por status
+      parameters:
+      - in: query
+        name: fim
+        schema:
+          type: string
+          format: date
+        description: Data final (AAAA-MM-DD), inclusiva.
+      - in: query
+        name: inicio
+        schema:
+          type: string
+          format: date
+        description: Data inicial (AAAA-MM-DD), inclusiva.
+      - in: query
+        name: limite
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 10
+      - in: query
+        name: loja
+        schema:
+          type: integer
+          minimum: 1
+        description: Somente ADMIN; gerentes usam a própria filial.
+      tags:
+      - Relatórios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PedidosPorStatus'
+          description: ''
+  /api/relatorios/produtos-mais-vendidos/:
+    get:
+      operationId: relatorios_produtos_mais_vendidos_list
+      description: Ranking por quantidade vendida em pedidos FINALIZADOS. Use ``limite``
+        (1 a 100).
+      summary: Produtos mais vendidos
+      parameters:
+      - in: query
+        name: fim
+        schema:
+          type: string
+          format: date
+        description: Data final (AAAA-MM-DD), inclusiva.
+      - in: query
+        name: inicio
+        schema:
+          type: string
+          format: date
+        description: Data inicial (AAAA-MM-DD), inclusiva.
+      - in: query
+        name: limite
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 10
+      - in: query
+        name: loja
+        schema:
+          type: integer
+          minimum: 1
+        description: Somente ADMIN; gerentes usam a própria filial.
+      tags:
+      - Relatórios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProdutoVendido'
+          description: ''
+  /api/relatorios/vendas/:
+    get:
+      operationId: relatorios_vendas_list
+      description: Faturamento, número de pedidos e ticket médio (apenas pedidos FINALIZADOS).
+      summary: Vendas por filial
+      parameters:
+      - in: query
+        name: fim
+        schema:
+          type: string
+          format: date
+        description: Data final (AAAA-MM-DD), inclusiva.
+      - in: query
+        name: inicio
+        schema:
+          type: string
+          format: date
+        description: Data inicial (AAAA-MM-DD), inclusiva.
+      - in: query
+        name: limite
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 10
+      - in: query
+        name: loja
+        schema:
+          type: integer
+          minimum: 1
+        description: Somente ADMIN; gerentes usam a própria filial.
+      tags:
+      - Relatórios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VendasLoja'
+          description: ''
+  /api/separacoes/:
+    get:
+      operationId: separacoes_list
+      description: 'Separações da filial do usuário. Filtros: ``status``, ``usuario``,
+        ``pedido``.'
+      summary: Listar separações
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - in: query
+        name: pedido
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELADA
+          - CONCLUIDA
+          - EM_ANDAMENTO
+        description: |-
+          * `EM_ANDAMENTO` - Em andamento
+          * `CONCLUIDA` - Concluída
+          * `CANCELADA` - Cancelada
+      - in: query
+        name: usuario
+        schema:
+          type: integer
+      tags:
+      - Separações
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSeparacaoList'
+          description: ''
+  /api/separacoes/{id}/:
+    get:
+      operationId: separacoes_retrieve
+      description: Consulta de separações e conclusão pelo separador.
+      summary: Detalhar separação
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este separação.
+        required: true
+      tags:
+      - Separações
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Separacao'
+          description: ''
+  /api/separacoes/{id}/concluir/:
+    post:
+      operationId: separacoes_concluir_create
+      description: O próprio separador (ou ADMIN/GERENTE) conclui a separação. O pedido
+        passa para SEPARADO.
+      summary: Concluir separação
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este separação.
+        required: true
+      tags:
+      - Separações
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Separacao'
+          description: ''
+  /api/usuarios/:
+    get:
+      operationId: usuarios_list
+      description: ADMIN vê todos; GERENTE vê apenas os usuários da própria filial.
+      summary: Listar usuários
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: loja
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - in: query
+        name: role
+        schema:
+          type: string
+          title: Perfil
+          enum:
+          - ADMIN
+          - CAIXA
+          - CLIENTE
+          - GERENTE
+          - SEPARADOR
+        description: |-
+          * `ADMIN` - Administrador
+          * `GERENTE` - Gerente
+          * `SEPARADOR` - Separador
+          * `CAIXA` - Caixa
+          * `CLIENTE` - Cliente
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - Usuários
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsuarioList'
+          description: ''
+    post:
+      operationId: usuarios_create
+      description: GERENTE só cadastra usuários da própria filial e não pode criar
+        ADMIN.
+      summary: Cadastrar usuário
+      tags:
+      - Usuários
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UsuarioCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UsuarioCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioCreate'
+          description: ''
+  /api/usuarios/{id}/:
+    get:
+      operationId: usuarios_retrieve
+      description: Gestão de usuários (ADMIN e GERENTE) e consulta do próprio perfil.
+      summary: Detalhar usuário
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este usuário.
+        required: true
+      tags:
+      - Usuários
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+          description: ''
+    put:
+      operationId: usuarios_update
+      description: Gestão de usuários (ADMIN e GERENTE) e consulta do próprio perfil.
+      summary: Atualizar usuário
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este usuário.
+        required: true
+      tags:
+      - Usuários
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UsuarioRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UsuarioRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+          description: ''
+    patch:
+      operationId: usuarios_partial_update
+      description: Gestão de usuários (ADMIN e GERENTE) e consulta do próprio perfil.
+      summary: Atualizar parcialmente usuário
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este usuário.
+        required: true
+      tags:
+      - Usuários
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUsuarioRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUsuarioRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUsuarioRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+          description: ''
+    delete:
+      operationId: usuarios_destroy
+      description: O usuário é desativado (``is_active=false``), não removido.
+      summary: Desativar usuário
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este usuário.
+        required: true
+      tags:
+      - Usuários
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/usuarios/me/:
+    get:
+      operationId: usuarios_me_retrieve
+      description: Retorna os dados do usuário autenticado.
+      summary: Meu perfil
+      tags:
+      - Usuários
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+          description: ''
+components:
+  schemas:
+    AjusteEstoqueRequest:
+      type: object
+      description: Entrada (positivo) ou saída (negativo) manual de mercadoria.
+      properties:
+        delta:
+          type: integer
+          description: Quantidade a somar (ou subtrair, se negativa).
+        motivo:
+          type: string
+          minLength: 1
+          description: 'Ex.: recebimento de fornecedor, perda, inventário.'
+          maxLength: 255
+      required:
+      - delta
+      - motivo
+    CategoriaEnum:
+      enum:
+      - HORTIFRUTI
+      - MERCEARIA
+      - BEBIDAS
+      - LATICINIOS
+      - PADARIA
+      - ACOUGUE
+      - LIMPEZA
+      - HIGIENE
+      type: string
+      description: |-
+        * `HORTIFRUTI` - Hortifrúti
+        * `MERCEARIA` - Mercearia
+        * `BEBIDAS` - Bebidas
+        * `LATICINIOS` - Laticínios e frios
+        * `PADARIA` - Padaria
+        * `ACOUGUE` - Açougue
+        * `LIMPEZA` - Limpeza
+        * `HIGIENE` - Higiene e beleza
+    Cliente:
+      type: object
+      description: Cliente com a lista (somente leitura) dos seus endereços.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        usuario:
+          type: integer
+          readOnly: true
+          nullable: true
+          title: Usuário
+        nome:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: E-mail
+          maxLength: 254
+        telefone:
+          type: string
+          maxLength: 20
+        loja:
+          type: integer
+          nullable: true
+          title: Loja preferida
+        data_cadastro:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Data de cadastro
+        enderecos:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnderecoCliente'
+          readOnly: true
+      required:
+      - data_cadastro
+      - email
+      - enderecos
+      - id
+      - nome
+      - usuario
+    ClienteRequest:
+      type: object
+      description: Cliente com a lista (somente leitura) dos seus endereços.
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: E-mail
+          maxLength: 254
+        telefone:
+          type: string
+          maxLength: 20
+        loja:
+          type: integer
+          nullable: true
+          title: Loja preferida
+      required:
+      - email
+      - nome
+    EnderecoCliente:
+      type: object
+      description: Endereço de entrega de um cliente.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        cliente:
+          type: integer
+        endereco:
+          type: string
+          title: Logradouro
+          maxLength: 255
+        numero:
+          type: string
+          title: Número
+          maxLength: 20
+        complemento:
+          type: string
+          maxLength: 100
+        bairro:
+          type: string
+          maxLength: 100
+        cidade:
+          type: string
+          maxLength: 100
+        estado:
+          $ref: '#/components/schemas/EstadoEnum'
+        cep:
+          type: string
+          pattern: ^\d{5}-?\d{3}$
+          maxLength: 9
+        principal:
+          type: boolean
+      required:
+      - bairro
+      - cep
+      - cidade
+      - cliente
+      - endereco
+      - estado
+      - id
+      - numero
+    EnderecoClienteRequest:
+      type: object
+      description: Endereço de entrega de um cliente.
+      properties:
+        cliente:
+          type: integer
+        endereco:
+          type: string
+          minLength: 1
+          title: Logradouro
+          maxLength: 255
+        numero:
+          type: string
+          minLength: 1
+          title: Número
+          maxLength: 20
+        complemento:
+          type: string
+          maxLength: 100
+        bairro:
+          type: string
+          minLength: 1
+          maxLength: 100
+        cidade:
+          type: string
+          minLength: 1
+          maxLength: 100
+        estado:
+          $ref: '#/components/schemas/EstadoEnum'
+        cep:
+          type: string
+          minLength: 1
+          pattern: ^\d{5}-?\d{3}$
+          maxLength: 9
+        principal:
+          type: boolean
+      required:
+      - bairro
+      - cep
+      - cidade
+      - cliente
+      - endereco
+      - estado
+      - numero
+    EstadoEnum:
+      enum:
+      - AC
+      - AL
+      - AP
+      - AM
+      - BA
+      - CE
+      - DF
+      - ES
+      - GO
+      - MA
+      - MT
+      - MS
+      - MG
+      - PA
+      - PB
+      - PR
+      - PE
+      - PI
+      - RJ
+      - RN
+      - RS
+      - RO
+      - RR
+      - SC
+      - SP
+      - SE
+      - TO
+      type: string
+      description: |-
+        * `AC` - Acre
+        * `AL` - Alagoas
+        * `AP` - Amapá
+        * `AM` - Amazonas
+        * `BA` - Bahia
+        * `CE` - Ceará
+        * `DF` - Distrito Federal
+        * `ES` - Espírito Santo
+        * `GO` - Goiás
+        * `MA` - Maranhão
+        * `MT` - Mato Grosso
+        * `MS` - Mato Grosso do Sul
+        * `MG` - Minas Gerais
+        * `PA` - Pará
+        * `PB` - Paraíba
+        * `PR` - Paraná
+        * `PE` - Pernambuco
+        * `PI` - Piauí
+        * `RJ` - Rio de Janeiro
+        * `RN` - Rio Grande do Norte
+        * `RS` - Rio Grande do Sul
+        * `RO` - Rondônia
+        * `RR` - Roraima
+        * `SC` - Santa Catarina
+        * `SP` - São Paulo
+        * `SE` - Sergipe
+        * `TO` - Tocantins
+    EstoqueBaixo:
+      type: object
+      description: Item com saldo abaixo do mínimo.
+      properties:
+        loja_id:
+          type: integer
+        loja_nome:
+          type: string
+        produto_id:
+          type: integer
+        produto_nome:
+          type: string
+        quantidade:
+          type: integer
+        quantidade_minima:
+          type: integer
+      required:
+      - loja_id
+      - loja_nome
+      - produto_id
+      - produto_nome
+      - quantidade
+      - quantidade_minima
+    EstoqueLocal:
+      type: object
+      description: Saldo de um produto em uma filial.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        produto:
+          type: integer
+        produto_nome:
+          type: string
+          readOnly: true
+        produto_sku:
+          type: string
+          readOnly: true
+        loja:
+          type: integer
+        loja_nome:
+          type: string
+          readOnly: true
+        quantidade:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        quantidade_minima:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          title: Quantidade mínima
+        abaixo_do_minimo:
+          type: boolean
+          readOnly: true
+        data_atualizacao:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Data de atualização
+      required:
+      - abaixo_do_minimo
+      - data_atualizacao
+      - id
+      - loja
+      - loja_nome
+      - produto
+      - produto_nome
+      - produto_sku
+    EstoqueLocalRequest:
+      type: object
+      description: Saldo de um produto em uma filial.
+      properties:
+        produto:
+          type: integer
+        loja:
+          type: integer
+        quantidade:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        quantidade_minima:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          title: Quantidade mínima
+      required:
+      - loja
+      - produto
+    ItemPedido:
+      type: object
+      description: Item de pedido (somente leitura).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        produto:
+          type: integer
+          readOnly: true
+        produto_nome:
+          type: string
+          readOnly: true
+        quantidade:
+          type: integer
+          readOnly: true
+        preco_unitario:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Preço unitário
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - id
+      - preco_unitario
+      - produto
+      - produto_nome
+      - quantidade
+      - subtotal
+    ItemPedidoEntradaRequest:
+      type: object
+      description: Produto e quantidade informados na criação do pedido.
+      properties:
+        produto:
+          type: integer
+        quantidade:
+          type: integer
+          maximum: 999
+          minimum: 1
+      required:
+      - produto
+      - quantidade
+    Loja:
+      type: object
+      description: Representação completa de uma loja/filial.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 120
+        endereco:
+          type: string
+          title: Endereço
+          maxLength: 255
+        telefone:
+          type: string
+          maxLength: 20
+        horario_abertura:
+          type: string
+          format: time
+          title: Horário de abertura
+        horario_fechamento:
+          type: string
+          format: time
+          title: Horário de fechamento
+        ativa:
+          type: boolean
+        data_criacao:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Data de criação
+        data_atualizacao:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Data de atualização
+      required:
+      - data_atualizacao
+      - data_criacao
+      - endereco
+      - horario_abertura
+      - horario_fechamento
+      - id
+      - nome
+    LojaRequest:
+      type: object
+      description: Representação completa de uma loja/filial.
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          maxLength: 120
+        endereco:
+          type: string
+          minLength: 1
+          title: Endereço
+          maxLength: 255
+        telefone:
+          type: string
+          maxLength: 20
+        horario_abertura:
+          type: string
+          format: time
+          title: Horário de abertura
+        horario_fechamento:
+          type: string
+          format: time
+          title: Horário de fechamento
+        ativa:
+          type: boolean
+      required:
+      - endereco
+      - horario_abertura
+      - horario_fechamento
+      - nome
+    PaginatedClienteList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cliente'
+    PaginatedEnderecoClienteList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnderecoCliente'
+    PaginatedEstoqueLocalList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EstoqueLocal'
+    PaginatedLojaList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Loja'
+    PaginatedPedidoList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pedido'
+    PaginatedProdutoList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Produto'
+    PaginatedSeparacaoList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Separacao'
+    PaginatedUsuarioList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Usuario'
+    PatchedClienteRequest:
+      type: object
+      description: Cliente com a lista (somente leitura) dos seus endereços.
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: E-mail
+          maxLength: 254
+        telefone:
+          type: string
+          maxLength: 20
+        loja:
+          type: integer
+          nullable: true
+          title: Loja preferida
+    PatchedEnderecoClienteRequest:
+      type: object
+      description: Endereço de entrega de um cliente.
+      properties:
+        cliente:
+          type: integer
+        endereco:
+          type: string
+          minLength: 1
+          title: Logradouro
+          maxLength: 255
+        numero:
+          type: string
+          minLength: 1
+          title: Número
+          maxLength: 20
+        complemento:
+          type: string
+          maxLength: 100
+        bairro:
+          type: string
+          minLength: 1
+          maxLength: 100
+        cidade:
+          type: string
+          minLength: 1
+          maxLength: 100
+        estado:
+          $ref: '#/components/schemas/EstadoEnum'
+        cep:
+          type: string
+          minLength: 1
+          pattern: ^\d{5}-?\d{3}$
+          maxLength: 9
+        principal:
+          type: boolean
+    PatchedEstoqueLocalRequest:
+      type: object
+      description: Saldo de um produto em uma filial.
+      properties:
+        produto:
+          type: integer
+        loja:
+          type: integer
+        quantidade:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        quantidade_minima:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          title: Quantidade mínima
+    PatchedLojaRequest:
+      type: object
+      description: Representação completa de uma loja/filial.
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          maxLength: 120
+        endereco:
+          type: string
+          minLength: 1
+          title: Endereço
+          maxLength: 255
+        telefone:
+          type: string
+          maxLength: 20
+        horario_abertura:
+          type: string
+          format: time
+          title: Horário de abertura
+        horario_fechamento:
+          type: string
+          format: time
+          title: Horário de fechamento
+        ativa:
+          type: boolean
+    PatchedProdutoRequest:
+      type: object
+      description: Representação completa de um produto do catálogo.
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          maxLength: 150
+        descricao:
+          type: string
+          title: Descrição
+        categoria:
+          $ref: '#/components/schemas/CategoriaEnum'
+        preco:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          title: Preço
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 30
+        ativo:
+          type: boolean
+    PatchedUsuarioRequest:
+      type: object
+      description: Leitura e atualização de usuários (sem senha).
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: E-mail
+          maxLength: 254
+        telefone:
+          type: string
+          maxLength: 20
+        loja:
+          type: integer
+          nullable: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Perfil
+        is_active:
+          type: boolean
+          title: Ativo
+    Pedido:
+      type: object
+      description: Pedido completo com itens, total e separações.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        codigo:
+          type: string
+          readOnly: true
+          title: Código
+        cliente:
+          type: integer
+          readOnly: true
+        cliente_nome:
+          type: string
+          readOnly: true
+        loja:
+          type: integer
+          readOnly: true
+        loja_nome:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PedidoStatusEnum'
+          readOnly: true
+        observacao:
+          type: string
+          readOnly: true
+          title: Observação
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemPedido'
+          readOnly: true
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        separacoes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Separacao'
+          readOnly: true
+        data_criacao:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Data de criação
+        data_atualizacao:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Data de atualização
+      required:
+      - cliente
+      - cliente_nome
+      - codigo
+      - data_atualizacao
+      - data_criacao
+      - id
+      - itens
+      - loja
+      - loja_nome
+      - observacao
+      - separacoes
+      - status
+      - total
+    PedidoCreateRequest:
+      type: object
+      description: |-
+        Criação de pedido.
+
+        - CLIENTE: o pedido é feito em seu nome (``cliente`` é ignorado).
+        - Funcionário: informa ``cliente`` e só pode vender na própria filial.
+      properties:
+        cliente:
+          type: integer
+          description: Obrigatório para funcionários.
+        loja:
+          type: integer
+        itens:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemPedidoEntradaRequest'
+        observacao:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - itens
+      - loja
+    PedidoStatusEnum:
+      enum:
+      - PENDENTE
+      - EM_SEPARACAO
+      - SEPARADO
+      - FINALIZADO
+      - CANCELADO
+      type: string
+      description: |-
+        * `PENDENTE` - Pendente
+        * `EM_SEPARACAO` - Em separação
+        * `SEPARADO` - Separado
+        * `FINALIZADO` - Finalizado
+        * `CANCELADO` - Cancelado
+    PedidosPorStatus:
+      type: object
+      description: Quantidade de pedidos em cada status.
+      properties:
+        PENDENTE:
+          type: integer
+        EM_SEPARACAO:
+          type: integer
+        SEPARADO:
+          type: integer
+        FINALIZADO:
+          type: integer
+        CANCELADO:
+          type: integer
+      required:
+      - CANCELADO
+      - EM_SEPARACAO
+      - FINALIZADO
+      - PENDENTE
+      - SEPARADO
+    Produto:
+      type: object
+      description: Representação completa de um produto do catálogo.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 150
+        descricao:
+          type: string
+          title: Descrição
+        categoria:
+          $ref: '#/components/schemas/CategoriaEnum'
+        preco:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          title: Preço
+        sku:
+          type: string
+          maxLength: 30
+        ativo:
+          type: boolean
+        data_criacao:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Data de criação
+        data_atualizacao:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Data de atualização
+      required:
+      - data_atualizacao
+      - data_criacao
+      - id
+      - nome
+      - preco
+      - sku
+    ProdutoRequest:
+      type: object
+      description: Representação completa de um produto do catálogo.
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          maxLength: 150
+        descricao:
+          type: string
+          title: Descrição
+        categoria:
+          $ref: '#/components/schemas/CategoriaEnum'
+        preco:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          title: Preço
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 30
+        ativo:
+          type: boolean
+      required:
+      - nome
+      - preco
+      - sku
+    ProdutoVendido:
+      type: object
+      description: Linha do ranking de produtos mais vendidos.
+      properties:
+        produto_id:
+          type: integer
+        produto:
+          type: string
+        sku:
+          type: string
+        quantidade:
+          type: integer
+        faturamento:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - faturamento
+      - produto
+      - produto_id
+      - quantidade
+      - sku
+    RegistroClienteRequest:
+      type: object
+      description: Autocadastro público de clientes (cria ``Usuario`` + ``Cliente``).
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+        telefone:
+          type: string
+          default: ''
+          maxLength: 20
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        loja:
+          type: integer
+          nullable: true
+      required:
+      - email
+      - nome
+      - password
+    RoleEnum:
+      enum:
+      - ADMIN
+      - GERENTE
+      - SEPARADOR
+      - CAIXA
+      - CLIENTE
+      type: string
+      description: |-
+        * `ADMIN` - Administrador
+        * `GERENTE` - Gerente
+        * `SEPARADOR` - Separador
+        * `CAIXA` - Caixa
+        * `CLIENTE` - Cliente
+    Separacao:
+      type: object
+      description: Separação de um pedido (somente leitura).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        pedido:
+          type: integer
+          readOnly: true
+        pedido_codigo:
+          type: string
+          readOnly: true
+        usuario:
+          type: integer
+          readOnly: true
+          title: Separador
+        usuario_nome:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/SeparacaoStatusEnum'
+          readOnly: true
+        data_inicio:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Início
+        data_conclusao:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Conclusão
+      required:
+      - data_conclusao
+      - data_inicio
+      - id
+      - pedido
+      - pedido_codigo
+      - status
+      - usuario
+      - usuario_nome
+    SeparacaoStatusEnum:
+      enum:
+      - EM_ANDAMENTO
+      - CONCLUIDA
+      - CANCELADA
+      type: string
+      description: |-
+        * `EM_ANDAMENTO` - Em andamento
+        * `CONCLUIDA` - Concluída
+        * `CANCELADA` - Cancelada
+    TokenBlacklistRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - refresh
+    TokenComPerfilRequest:
+      type: object
+      description: Emite o par de tokens JWT incluindo ``nome``, ``role`` e ``loja_id``.
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    TokenVerifyRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - token
+    Usuario:
+      type: object
+      description: Leitura e atualização de usuários (sem senha).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: E-mail
+          maxLength: 254
+        telefone:
+          type: string
+          maxLength: 20
+        loja:
+          type: integer
+          nullable: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Perfil
+        is_active:
+          type: boolean
+          title: Ativo
+        data_cadastro:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Data de cadastro
+        loja_nome:
+          type: string
+          readOnly: true
+      required:
+      - data_cadastro
+      - email
+      - id
+      - loja_nome
+      - nome
+    UsuarioCreate:
+      type: object
+      description: Criação de usuário com senha validada pelas regras do Django.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nome:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: E-mail
+          maxLength: 254
+        telefone:
+          type: string
+          maxLength: 20
+        loja:
+          type: integer
+          nullable: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Perfil
+        is_active:
+          type: boolean
+          title: Ativo
+        data_cadastro:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Data de cadastro
+        loja_nome:
+          type: string
+          readOnly: true
+      required:
+      - data_cadastro
+      - email
+      - id
+      - loja_nome
+      - nome
+    UsuarioCreateRequest:
+      type: object
+      description: Criação de usuário com senha validada pelas regras do Django.
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: E-mail
+          maxLength: 254
+        telefone:
+          type: string
+          maxLength: 20
+        loja:
+          type: integer
+          nullable: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Perfil
+        is_active:
+          type: boolean
+          title: Ativo
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - nome
+      - password
+    UsuarioRequest:
+      type: object
+      description: Leitura e atualização de usuários (sem senha).
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: E-mail
+          maxLength: 254
+        telefone:
+          type: string
+          maxLength: 20
+        loja:
+          type: integer
+          nullable: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          title: Perfil
+        is_active:
+          type: boolean
+          title: Ativo
+      required:
+      - email
+      - nome
+    VendasLoja:
+      type: object
+      description: Linha do relatório de vendas por filial.
+      properties:
+        loja_id:
+          type: integer
+        loja:
+          type: string
+        pedidos:
+          type: integer
+        faturamento:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        ticket_medio:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - faturamento
+      - loja
+      - loja_id
+      - pedidos
+      - ticket_medio
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: Autenticação
+  description: Emissão e renovação de tokens JWT.
+- name: Usuários
+  description: Usuários do sistema e seus perfis.
+- name: Filiais
+  description: Lojas/filiais da rede.
+- name: Produtos
+  description: Catálogo de produtos.
+- name: Estoque
+  description: Estoque independente por filial.
+- name: Clientes
+  description: Clientes e endereços de entrega.
+- name: Pedidos
+  description: Pedidos, itens e fluxo de separação.
+- name: Separações
+  description: Acompanhamento das separações.
+- name: Relatórios
+  description: Indicadores gerenciais (em cache).
