@@ -37,13 +37,16 @@ def test_usuario_manager():
         Usuario.objects.create_superuser(email="a@a.com", password="x", is_staff=False)
     root = Usuario.objects.create_superuser(email="ROOT@Teste.com", password="x", nome="Root")
     assert root.email == "root@teste.com"
-    assert root.is_admin and root.is_equipe and root.role == Role.ADMIN
+    assert root.is_admin
+    assert root.is_equipe
+    assert root.role == Role.ADMIN
     assert str(root) == "Root <root@teste.com>"
 
 
 def test_produto_preco_positivo():
+    preco_zero = Decimal("0")
     with pytest.raises(IntegrityError):
-        Produto.objects.create(nome="Grátis", sku="X-0", preco=Decimal("0"))
+        Produto.objects.create(nome="Grátis", sku="X-0", preco=preco_zero)
 
 
 def test_estoque_unico_e_abaixo_do_minimo(estoque, produto, loja):

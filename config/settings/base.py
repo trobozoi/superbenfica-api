@@ -14,6 +14,16 @@ from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+
+def configuracoes() -> dict[str, Any]:
+    """Retorna as configurações deste módulo (nomes em MAIÚSCULAS).
+
+    Os settings de cada ambiente usam ``globals().update(base.configuracoes())``
+    para herdar a base sem ``import *`` (regra S2208 do SonarQube).
+    """
+    return {nome: valor for nome, valor in globals().items() if nome.isupper()}
+
+
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / ".env")
 
