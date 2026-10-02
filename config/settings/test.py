@@ -6,7 +6,9 @@ A chave secreta é gerada em tempo de execução, pois só vale durante os teste
 
 from django.core.management.utils import get_random_secret_key
 
-from config.settings.base import *  # noqa: F403
+from config.settings import base
+
+globals().update(base.configuracoes())
 
 SECRET_KEY = get_random_secret_key()
 DEBUG = False
@@ -23,6 +25,6 @@ CELERY_BROKER_URL = "memory://"
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]  # NOSONAR - só acelera testes
 
 REST_FRAMEWORK = {
-    **REST_FRAMEWORK,  # noqa: F405
+    **base.REST_FRAMEWORK,
     "DEFAULT_THROTTLE_CLASSES": (),
 }
