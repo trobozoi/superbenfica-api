@@ -39,6 +39,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "django_filters",
     "drf_spectacular",
+    "drf_spectacular_sidecar",
     "corsheaders",
     "channels",
 ]
@@ -249,10 +250,18 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "SCHEMA_PATH_PREFIX": r"/api/",
+    # Assets do Swagger/ReDoc servidos localmente (versão fixa, funciona offline).
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "/static/core/img/favicon.svg",
+    "REDOC_DIST": "SIDECAR",
     "SWAGGER_UI_SETTINGS": {
         "persistAuthorization": True,
         "displayRequestDuration": True,
         "filter": True,
+        "deepLinking": True,
+        "docExpansion": "list",
+        "defaultModelsExpandDepth": 0,
+        "syntaxHighlight": {"theme": "nord"},
     },
     "TAGS": [
         {"name": "Autenticação", "description": "Emissão e renovação de tokens JWT."},

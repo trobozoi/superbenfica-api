@@ -1,0 +1,131 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="API REST e WebSocket do sistema de gerenciamento de supermercados Super Benfica.">
+  <title>Super Benfica API</title>
+  <link rel="icon" href="{% static 'core/img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'core/css/tema.css' %}">
+  <link rel="stylesheet" href="{% static 'core/css/inicio.css' %}">
+</head>
+<body>
+  {% include "core/_cabecalho.html" %}
+
+  <main>
+    <section class="hero">
+      <div class="hero__conteudo">
+        <p class="status">
+          <span class="status__ponto" aria-hidden="true"></span>
+          API online · v{{ versao }} · {{ ambiente }}
+        </p>
+        <h1 class="hero__titulo">Gestão de supermercados<br><span>em tempo real</span></h1>
+        <p class="hero__texto">
+          API REST e WebSocket da rede Super Benfica: filiais com estoque independente,
+          pedidos com fluxo de separação, notificações ao vivo e relatórios gerenciais.
+        </p>
+        <div class="hero__acoes">
+          <a class="botao botao--primario" href="/api/docs/">
+            Explorar no Swagger {% include "core/_icone.html" with nome="seta" %}
+          </a>
+          <a class="botao botao--secundario" href="/api/redoc/">
+            {% include "core/_icone.html" with nome="livro" %} Referência (ReDoc)
+          </a>
+        </div>
+      </div>
+
+      <div class="terminal" aria-label="Exemplo de login">
+        <div class="terminal__barra" aria-hidden="true"><span></span><span></span><span></span></div>
+        <pre><code><span class="c"># 1. Faça login e receba os tokens JWT</span>
+<span class="k">POST</span> /api/auth/token/
+{
+  <span class="s">"email"</span>: <span class="s">"gerente.centro@superbenfica.com.br"</span>,
+  <span class="s">"password"</span>: <span class="s">"••••••••"</span>
+}
+
+<span class="c"># 2. Use o access token nas chamadas</span>
+<span class="k">GET</span> /api/pedidos/
+Authorization: Bearer <span class="v">&lt;access&gt;</span></code></pre>
+      </div>
+    </section>
+
+    <section class="secao" aria-labelledby="titulo-modulos">
+      <div class="secao__cabecalho">
+        <h2 id="titulo-modulos">Módulos</h2>
+        <p>Cada módulo tem sua seção no Swagger, com exemplos e os perfis permitidos.</p>
+      </div>
+      <ul class="grade-modulos">
+        {% for modulo in modulos %}
+        <li>
+          <a class="cartao-modulo" href="/api/docs/#/{{ modulo.nome|urlencode:'' }}">
+            <span class="cartao-modulo__icone">{% include "core/_icone.html" with nome=modulo.icone %}</span>
+            <span class="cartao-modulo__nome">{{ modulo.nome }}</span>
+            <span class="cartao-modulo__descricao">{{ modulo.descricao }}</span>
+            <code class="cartao-modulo__rota">{{ modulo.rota }}</code>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="secao secao--dupla">
+      <div aria-labelledby="titulo-passos">
+        <div class="secao__cabecalho">
+          <h2 id="titulo-passos">Como começar</h2>
+        </div>
+        <ol class="passos">
+          <li>
+            <strong>Faça login</strong>
+            <span>Em <code>POST /api/auth/token/</code> com e-mail e senha. Os usuários de exemplo vêm da carga inicial.</span>
+          </li>
+          <li>
+            <strong>Autorize no Swagger</strong>
+            <span>Clique em <em>Authorize</em> e cole o token <code>access</code>, sem o prefixo "Bearer".</span>
+          </li>
+          <li>
+            <strong>Teste os endpoints</strong>
+            <span>Use <em>Try it out</em>. O token expira em 15 minutos; renove em <code>/api/auth/token/refresh/</code>.</span>
+          </li>
+        </ol>
+      </div>
+
+      <div>
+        <div class="secao__cabecalho">
+          <h2 id="titulo-perfis">Perfis de acesso</h2>
+        </div>
+        <ul class="perfis" aria-labelledby="titulo-perfis">
+          {% for codigo, descricao in perfis %}
+          <li><span class="perfil">{{ codigo }}</span>{{ descricao }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section class="secao" aria-labelledby="titulo-ws">
+      <div class="secao__cabecalho">
+        <h2 id="titulo-ws">{% include "core/_icone.html" with nome="raio" %} Tempo real</h2>
+        <p>Eventos publicados via WebSocket assim que a transação é confirmada.</p>
+      </div>
+      <div class="canais">
+        <div class="canal">
+          <code>/ws/lojas/&lt;loja_id&gt;/?token=&lt;access&gt;</code>
+          <p>Equipe da filial: <span class="evento">pedido.criado</span> <span class="evento">pedido.atualizado</span>
+            <span class="evento">estoque.atualizado</span> <span class="evento">estoque.abaixo_do_minimo</span></p>
+        </div>
+        <div class="canal">
+          <code>/ws/notificacoes/?token=&lt;access&gt;</code>
+          <p>Cada usuário recebe os eventos dos próprios pedidos: <span class="evento">pedido.criado</span>
+            <span class="evento">pedido.atualizado</span></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <span>Super Benfica API v{{ versao }}</span>
+    <span>Django · REST Framework · Channels · Celery · PostgreSQL</span>
+    <a href="/api/schema/">OpenAPI 3</a>
+  </footer>
+</body>
+</html>

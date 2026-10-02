@@ -1,0 +1,391 @@
+/* Página inicial (/) do Super Benfica API. Depende de tema.css. */
+
+main {
+  max-width: var(--largura);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ---------------------------------------------------------------- hero */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 48px;
+  align-items: center;
+  padding: 72px 0 56px;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--sucesso-suave);
+  color: var(--sucesso);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.status__ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: pulso 2s infinite;
+}
+
+@keyframes pulso {
+  0% { box-shadow: 0 0 0 0 rgb(21 128 61 / 50%); }
+  70% { box-shadow: 0 0 0 8px rgb(21 128 61 / 0%); }
+  100% { box-shadow: 0 0 0 0 rgb(21 128 61 / 0%); }
+}
+
+.hero__titulo {
+  margin: 0;
+  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.hero__titulo span {
+  color: var(--marca);
+}
+
+.hero__texto {
+  max-width: 34rem;
+  margin: 20px 0 32px;
+  color: var(--texto-suave);
+  font-size: 1.1rem;
+}
+
+.hero__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* ---------------------------------------------------------------- terminal */
+
+.terminal {
+  overflow: hidden;
+  border-radius: var(--raio);
+  background: #1c1917;
+  box-shadow: var(--sombra);
+  border: 1px solid #2e2a28;
+}
+
+.terminal__barra {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+  background: #292524;
+}
+
+.terminal__barra span {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #57534e;
+}
+
+.terminal__barra span:first-child {
+  background: var(--marca);
+}
+
+.terminal pre {
+  margin: 0;
+  padding: 20px 22px 24px;
+  overflow-x: auto;
+  color: #e7e5e4;
+  font-size: 0.86rem;
+  line-height: 1.7;
+}
+
+.terminal code { font-size: inherit; }
+.terminal .c { color: #a8a29e; }
+.terminal .k { color: #fb7185; font-weight: 700; }
+.terminal .s { color: #86efac; }
+.terminal .v { color: #fcd34d; }
+
+/* ---------------------------------------------------------------- seções */
+
+.secao {
+  padding: 48px 0;
+  border-top: 1px solid var(--borda);
+}
+
+.secao__cabecalho {
+  margin-bottom: 24px;
+}
+
+.secao__cabecalho h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.secao__cabecalho h2 .icone {
+  color: var(--marca);
+}
+
+.secao__cabecalho p {
+  margin: 6px 0 0;
+  color: var(--texto-suave);
+}
+
+.secao--dupla {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 48px;
+}
+
+/* ---------------------------------------------------------------- módulos */
+
+.grade-modulos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cartao-modulo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  padding: 20px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  text-decoration: none;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.cartao-modulo:hover {
+  transform: translateY(-2px);
+  border-color: var(--marca);
+  box-shadow: var(--sombra);
+}
+
+.cartao-modulo__icone {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  background: var(--marca-suave);
+  color: var(--marca);
+}
+
+.cartao-modulo__icone .icone {
+  width: 22px;
+  height: 22px;
+}
+
+.cartao-modulo__nome {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.cartao-modulo__descricao {
+  flex: 1;
+  color: var(--texto-suave);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.cartao-modulo__rota {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--superficie-alt);
+  color: var(--texto-suave);
+  font-size: 0.78rem;
+}
+
+/* ---------------------------------------------------------------- passos */
+
+.passos {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: passo;
+}
+
+.passos li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px 16px 64px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--superficie);
+  counter-increment: passo;
+}
+
+.passos li::before {
+  content: counter(passo);
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--marca);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.passos span {
+  color: var(--texto-suave);
+  font-size: 0.93rem;
+}
+
+.passos code,
+.canal p code {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--superficie-alt);
+}
+
+/* ---------------------------------------------------------------- perfis */
+
+.perfis {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.perfis li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--texto-suave);
+  font-size: 0.93rem;
+}
+
+.perfil {
+  min-width: 104px;
+  padding: 4px 10px;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: var(--superficie);
+  color: var(--texto);
+  font-family: var(--fonte-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------- tempo real */
+
+.canais {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.canal {
+  padding: 20px;
+  border: 1px solid var(--borda);
+  border-left: 4px solid var(--marca);
+  border-radius: var(--raio);
+  background: var(--superficie);
+}
+
+.canal > code {
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.canal p {
+  margin: 10px 0 0;
+  color: var(--texto-suave);
+  font-size: 0.92rem;
+  line-height: 2;
+}
+
+.evento {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--marca-suave);
+  color: var(--marca);
+  font-family: var(--fonte-mono);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- rodapé */
+
+.rodape {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: var(--largura);
+  margin: 24px auto 0;
+  padding: 24px;
+  border-top: 1px solid var(--borda);
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.rodape a {
+  color: var(--marca);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* ---------------------------------------------------------------- responsivo */
+
+@media (max-width: 900px) {
+  .hero,
+  .secao--dupla {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .hero {
+    padding-top: 48px;
+  }
+}
+
+@media (max-width: 640px) {
+  main {
+    padding: 0 16px;
+  }
+
+  .canais {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .perfis li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status__ponto {
+    animation: none;
+  }
+}

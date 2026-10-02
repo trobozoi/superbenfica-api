@@ -1,0 +1,49 @@
+{% load static %}<!DOCTYPE html>
+{% comment %}
+Swagger UI do drf-spectacular com a identidade visual do Super Benfica.
+Mantém a mesma estrutura do template original (drf_spectacular/swagger_ui.html):
+apenas acrescenta o cabeçalho da marca e a folha de estilos swagger.css.
+{% endcomment %}
+<html lang="pt-BR" class="pagina-docs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Documentação · {{ title }}</title>
+  <link rel="icon" href="{% static 'core/img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ swagger_ui_css }}">
+  <link rel="stylesheet" href="{% static 'core/css/tema.css' %}">
+  <link rel="stylesheet" href="{% static 'core/css/swagger.css' %}">
+</head>
+<body>
+  {% include "core/_cabecalho.html" %}
+
+  <div class="docs-faixa">
+    <div class="docs-faixa__conteudo">
+      <div>
+        <h1>Documentação interativa</h1>
+        <p>Faça login em <strong>Autenticação → POST /api/auth/token/</strong>, clique em
+          <strong>Authorize</strong> e cole o token <code>access</code>.</p>
+      </div>
+      <ul class="docs-legenda" aria-label="Métodos HTTP">
+        <li class="metodo metodo--get">GET</li>
+        <li class="metodo metodo--post">POST</li>
+        <li class="metodo metodo--put">PUT</li>
+        <li class="metodo metodo--patch">PATCH</li>
+        <li class="metodo metodo--delete">DELETE</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="swagger-ui"></div>
+  <script src="{{ swagger_ui_bundle }}"></script>
+  <script src="{{ swagger_ui_standalone }}"></script>
+  {% if script_url %}
+  <script src="{{ script_url }}"></script>
+  {% else %}
+  <script>
+  {% include template_name_js %}
+  </script>
+  {% endif %}
+</body>
+</html>
