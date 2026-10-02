@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Super Benfica API
-  version: 1.0.0
+  version: 1.1.0
   description: |-
     API REST do sistema de gerenciamento de supermercados **Super Benfica**.
 

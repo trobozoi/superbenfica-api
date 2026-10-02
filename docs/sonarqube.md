@@ -17,7 +17,7 @@
 | Concorrência | `transaction.atomic` + `select_for_update` no estoque e nos pedidos |
 | S5145: log injection | Texto livre do usuário (motivo do ajuste) não vai para o log |
 
-Métricas atuais: **76 testes** e cobertura de **~98%** (meta do Quality Gate: ≥ 80%).
+Métricas atuais: **89 testes** e cobertura de **~98%** (meta do Quality Gate: ≥ 80%).
 
 ## Security Hotspots para revisão manual
 
