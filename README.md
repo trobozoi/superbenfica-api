@@ -1,8 +1,8 @@
 # Super Benfica API
 
-API REST + WebSocket do sistema de gerenciamento de supermercados **Super Benfica**: multi-filial com estoque independente, pedidos com fluxo de separação, notificações em tempo real, tarefas assíncronas e relatórios em cache.
+API REST + WebSocket do sistema de gerenciamento de supermercados **Super Benfica**: multi-filial com estoque independente, catálogo com código de barras e fotos, pedidos com forma de pagamento e checklist de separação, notificações em tempo real, rate limit por endpoint, tarefas assíncronas e relatórios em cache.
 
-**Stack:** Python 3.12+ · Django 5.2 LTS · Django REST Framework · SimpleJWT · drf-spectacular (Swagger) · Django Channels · Celery · Redis · PostgreSQL (Supabase) · Nginx · SonarQube
+**Stack:** Python 3.12+ · Django 5.2 LTS · Django REST Framework · SimpleJWT · drf-spectacular (Swagger) · Django Channels · Celery · Redis · Pillow · PostgreSQL (Supabase) · Nginx · SonarQube
 
 ## Início rápido
 
@@ -36,7 +36,9 @@ Acesse:
 | http://localhost:8000/api/schema/ | Schema OpenAPI 3 (YAML) |
 | http://localhost:8000/admin/ | Django Admin |
 
-> Sem `REDIS_URL` no `.env`, cache e WebSocket usam memória local e o Celery executa as tasks de forma síncrona. Isso basta para desenvolver; para usar o Redis, preencha `REDIS_URL` ou suba com Docker.
+> Sem `REDIS_URL` no `.env`, cache, rate limit e WebSocket usam memória local e o Celery executa as tasks de forma síncrona. Isso basta para desenvolver; para usar o Redis, preencha `REDIS_URL` ou suba com Docker.
+>
+> As fotos de produto enviadas ficam em `media/` (configurável por `MEDIA_ROOT`) e, com `DEBUG=True`, são servidas pelo próprio Django em `/media/`.
 
 ## Banco de dados (Supabase)
 
@@ -54,7 +56,7 @@ python manage.py carga_inicial -v 2       # lista cada registro
 python manage.py carga_inicial --reset    # apaga e recria os dados de exemplo (somente DEBUG=True)
 ```
 
-Ela cria 3 filiais, 1 usuário por perfil, 30 produtos, o estoque de todos os produtos nas 3 filiais (alguns abaixo do mínimo), 10 clientes com endereço e 5 pedidos em status diferentes, 2 deles com separação. Os dados ficam em [apps/core/seed_data/](apps/core/seed_data/).
+Ela cria 3 filiais, 1 usuário por perfil, 30 produtos, o estoque de todos os produtos nas 3 filiais (alguns abaixo do mínimo), 10 clientes com endereço e 5 pedidos em status diferentes (cada um com uma forma de pagamento), 2 deles com separação. As formas de pagamento padrão (Pix, crédito, débito, dinheiro e vale-alimentação) não dependem da carga: são criadas pelo `migrate`. Os dados ficam em [apps/core/seed_data/](apps/core/seed_data/).
 
 | E-mail | Perfil | Senha |
 |--------|--------|-------|
@@ -73,6 +75,8 @@ docker compose --profile local-db up --build    # + PostgreSQL local (use DB_HOS
 docker compose --profile quality up sonarqube   # SonarQube em http://localhost:9000
 ```
 
+As fotos de produto ficam no volume `media` (inclua-o no backup) e são servidas pelo Nginx em `/media/`.
+
 ## Qualidade
 
 ```bash
@@ -86,6 +90,6 @@ O pipeline [.github/workflows/ci.yml](.github/workflows/ci.yml) roda lint, teste
 ## Documentação
 
 - [docs/arquitetura.md](docs/arquitetura.md): estrutura, modelo de dados, fluxos e decisões.
-- [docs/api.md](docs/api.md): autenticação, perfis, endpoints e WebSocket.
+- [docs/api.md](docs/api.md): autenticação, perfis, endpoints, formas de pagamento, fotos, rate limit e WebSocket.
 - [docs/openapi.yaml](docs/openapi.yaml): schema OpenAPI exportado. Para regenerar: `python manage.py spectacular --file docs/openapi.yaml`.
 - [docs/sonarqube.md](docs/sonarqube.md): regras seguidas e Security Hotspots para revisão manual.

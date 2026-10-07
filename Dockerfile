@@ -20,6 +20,9 @@ COPY --chown=app:app manage.py ./
 COPY --chown=app:app config ./config
 COPY --chown=app:app apps ./apps
 
+# Pasta das fotos enviadas: precisa existir com o dono certo para o volume herdar a permissão.
+RUN mkdir -p /app/media && chown app:app /app/media
+
 USER app
 
 EXPOSE 8000

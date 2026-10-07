@@ -32,3 +32,6 @@ media/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Estado local do Celery Beat
+celerybeat-schedule*
