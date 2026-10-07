@@ -31,6 +31,7 @@ from apps.clientes.models import Cliente, EnderecoCliente
 from apps.core.constants import Role
 from apps.estoque.models import EstoqueLocal
 from apps.filiais.models import Loja
+from apps.pagamentos.models import FormaPagamento
 from apps.pedidos.models import ItemPedido, Pedido, Separacao, StatusPedido, StatusSeparacao
 from apps.produtos.models import Produto
 from apps.usuarios.models import Usuario
@@ -244,6 +245,10 @@ class Command(BaseCommand):
     ) -> None:
         """Cria os pedidos de exemplo com itens e separações."""
         por_sku = {produto.sku: produto for produto in produtos}
+        # Formas cadastradas pela migration pagamentos.0002; a primeira de cada tipo é usada.
+        formas: dict[str, FormaPagamento] = {}
+        for forma in FormaPagamento.objects.filter(ativa=True).order_by("ordem"):
+            formas.setdefault(forma.tipo, forma)
         for dados in carregar("pedidos.json"):
             pedido, criado = Pedido.objects.get_or_create(
                 codigo=dados["codigo"],
@@ -251,6 +256,7 @@ class Command(BaseCommand):
                     "cliente": clientes[dados["cliente"]],
                     "loja": lojas[dados["loja"]],
                     "status": dados["status"],
+                    "forma_pagamento": formas.get(dados.get("forma_pagamento", "")),
                     "observacao": dados.get("observacao", ""),
                 },
             )

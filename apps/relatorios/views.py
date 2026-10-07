@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 
 from apps.core.mixins import usuario_e_admin
 from apps.core.permissions import IsGestao
+from apps.core.throttling import Escopo
 from apps.relatorios import services
 from apps.relatorios.serializers import (
     EstoqueBaixoSerializer,
@@ -47,6 +48,7 @@ class RelatorioBaseView(APIView):
     """Valida filtros, aplica o escopo de filial e cacheia o resultado."""
 
     permission_classes = (IsGestao,)
+    throttle_scope = Escopo.RELATORIOS
     nome_relatorio = ""
     usar_cache = True
 

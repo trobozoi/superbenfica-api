@@ -61,6 +61,7 @@ LOCAL_APPS = [
     "apps.produtos",
     "apps.estoque",
     "apps.clientes",
+    "apps.pagamentos",
     "apps.pedidos",
     "apps.relatorios",
 ]
@@ -140,6 +141,8 @@ def build_postgres_config() -> dict[str, Any]:
 # Redis: cache, Channels e Celery
 # -----------------------------------------------------------------------------
 REDIS_URL = env("REDIS_URL", default="")
+# Precisa ser maior que o bloqueio de 5 s do channels_redis (veja CHANNEL_LAYERS).
+CHANNEL_LAYER_SOCKET_TIMEOUT = env.int("CHANNEL_LAYER_SOCKET_TIMEOUT", default=15)
 
 if REDIS_URL:
     CACHES = {
@@ -152,7 +155,13 @@ if REDIS_URL:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {"hosts": [REDIS_URL]},
+            "CONFIG": {
+                # O channels_redis espera mensagens com BZPOPMIN bloqueando por 5 s, e o
+                # redis-py 8 também desiste da leitura em 5 s por padrão: a leitura estourava,
+                # o consumer caía (WebSocket fechado com 1011) e o painel reconectava a cada
+                # ~10 s. O limite de leitura precisa ser maior que o bloqueio.
+                "hosts": [{"address": REDIS_URL, "socket_timeout": CHANNEL_LAYER_SOCKET_TIMEOUT}],
+            },
         }
     }
 else:
@@ -195,6 +204,15 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # -----------------------------------------------------------------------------
+# Arquivos enviados (fotos de produto)
+# Em desenvolvimento o Django serve /media/; com Docker, o Nginx serve o volume "media".
+# -----------------------------------------------------------------------------
+MEDIA_URL = "media/"
+MEDIA_ROOT = Path(env("MEDIA_ROOT", default=str(BASE_DIR / "media")))
+FOTO_PRODUTO_MAX_BYTES = 2 * 1024 * 1024
+FOTO_PRODUTO_MAX_LADO = 1200
+
+# -----------------------------------------------------------------------------
 # CORS / CSRF
 # -----------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS: list[str] = env.list("CORS_ALLOWED_ORIGINS", default=[])
@@ -217,11 +235,25 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Rate limit: limites globais + escopos por endpoint (ver apps/core/throttling.py).
+    # Cada limite pode ser ajustado no .env, ex.: THROTTLE_LOGIN=10/min
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
     ),
-    "DEFAULT_THROTTLE_RATES": {"anon": "60/min", "user": "600/min"},
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": env("THROTTLE_ANON", default="60/min"),
+        "user": env("THROTTLE_USER", default="600/min"),
+        "login": env("THROTTLE_LOGIN", default="5/min"),
+        "jwt": env("THROTTLE_JWT", default="30/min"),
+        "registro": env("THROTTLE_REGISTRO", default="10/hour"),
+        "pedidos_criacao": env("THROTTLE_PEDIDOS_CRIACAO", default="30/min"),
+        "pedidos_fluxo": env("THROTTLE_PEDIDOS_FLUXO", default="120/min"),
+        "estoque_ajuste": env("THROTTLE_ESTOQUE_AJUSTE", default="60/min"),
+        "upload": env("THROTTLE_UPLOAD", default="20/min"),
+        "relatorios": env("THROTTLE_RELATORIOS", default="30/min"),
+    },
 }
 
 SIMPLE_JWT = {
@@ -244,6 +276,22 @@ SPECTACULAR_SETTINGS = {
         "1. Obtenha um par de tokens em `POST /api/auth/token/` com e-mail e senha.\n"
         "2. Clique em **Authorize** e informe o token de acesso (`access`).\n"
         "3. Renove o token expirado em `POST /api/auth/token/refresh/`.\n\n"
+        "### Rate limit\n"
+        "Ao exceder um limite, a API responde **429 Too Many Requests** com o cabeçalho `Retry-After`.\n"
+        "\n"
+        "| Escopo | Limite padrão | Endpoints |\n"
+        "|--------|---------------|-----------|\n"
+        "| anônimo | 60/min por IP | qualquer endpoint sem login |\n"
+        "| usuário | 600/min por usuário | qualquer endpoint autenticado |\n"
+        "| login | 5/min por IP | `POST /api/auth/token/` |\n"
+        "| jwt | 30/min | renovar e validar token, logout |\n"
+        "| registro | 10/hora por IP | `POST /api/auth/registrar/` |\n"
+        "| pedidos_criacao | 30/min | `POST /api/pedidos/` |\n"
+        "| pedidos_fluxo | 120/min | cancelar, iniciar separação, marcar item, concluir, finalizar |\n"
+        "| estoque_ajuste | 60/min | `POST /api/estoques/{id}/ajustar/` |\n"
+        "| upload | 20/min | foto do produto |\n"
+        "| relatorios | 30/min | `/api/relatorios/*` |\n"
+        "\n"
         "### Perfis (roles)\n"
         "| Role | Acesso |\n"
         "|------|--------|\n"
@@ -280,6 +328,10 @@ SPECTACULAR_SETTINGS = {
         {"name": "Produtos", "description": "Catálogo de produtos."},
         {"name": "Estoque", "description": "Estoque independente por filial."},
         {"name": "Clientes", "description": "Clientes e endereços de entrega."},
+        {
+            "name": "Formas de pagamento",
+            "description": "Pix, cartões, dinheiro e vale-alimentação aceitos nos pedidos.",
+        },
         {"name": "Pedidos", "description": "Pedidos, itens e fluxo de separação."},
         {"name": "Separações", "description": "Acompanhamento das separações."},
         {"name": "Relatórios", "description": "Indicadores gerenciais (em cache)."},

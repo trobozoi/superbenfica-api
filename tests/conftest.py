@@ -15,6 +15,7 @@ from apps.clientes.models import Cliente
 from apps.core.constants import Role
 from apps.estoque.models import EstoqueLocal
 from apps.filiais.models import Loja
+from apps.pagamentos.models import FormaPagamento, TipoPagamento
 from apps.produtos.models import Produto
 from apps.usuarios.models import Usuario
 
@@ -113,6 +114,12 @@ def estoque(produto: Produto, loja: Loja) -> EstoqueLocal:
 def estoque_2(produto_2: Produto, loja: Loja) -> EstoqueLocal:
     """Estoque do ``produto_2`` na filial principal (5 unidades)."""
     return EstoqueLocal.objects.create(produto=produto_2, loja=loja, quantidade=5, quantidade_minima=2)
+
+
+@pytest.fixture
+def forma_pagamento() -> FormaPagamento:
+    """Forma "Pix" cadastrada pela migration pagamentos.0002."""
+    return FormaPagamento.objects.get(tipo=TipoPagamento.PIX)
 
 
 @pytest.fixture

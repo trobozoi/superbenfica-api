@@ -10,6 +10,7 @@ from rest_framework.response import Response
 
 from apps.core.mixins import LojaScopedQuerysetMixin, PermissoesPorAcaoMixin
 from apps.core.permissions import IsEquipe, IsGestao
+from apps.core.throttling import Escopo, ThrottlePorAcaoMixin
 from apps.estoque.filters import EstoqueLocalFilter
 from apps.estoque.models import EstoqueLocal
 from apps.estoque.serializers import AjusteEstoqueSerializer, EstoqueLocalSerializer
@@ -35,13 +36,14 @@ TAG = "Estoque"
     partial_update=extend_schema(tags=[TAG], summary="Atualizar parcialmente estoque"),
     destroy=extend_schema(tags=[TAG], summary="Remover produto do estoque da filial"),
 )
-class EstoqueLocalViewSet(PermissoesPorAcaoMixin, LojaScopedQuerysetMixin, viewsets.ModelViewSet):
+class EstoqueLocalViewSet(ThrottlePorAcaoMixin, PermissoesPorAcaoMixin, LojaScopedQuerysetMixin, viewsets.ModelViewSet):
     """Estoque independente por filial."""
 
     queryset = EstoqueLocal.objects.select_related("produto", "loja")
     serializer_class = EstoqueLocalSerializer
     permission_classes = (IsGestao,)
     permissoes_por_acao = {"list": (IsEquipe,), "retrieve": (IsEquipe,)}
+    throttle_scopes_por_acao = {"ajustar": Escopo.ESTOQUE_AJUSTE}
     filterset_class = EstoqueLocalFilter
     search_fields = ("produto__nome", "produto__sku")
     ordering_fields = ("quantidade", "produto__nome", "data_atualizacao")

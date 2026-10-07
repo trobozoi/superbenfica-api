@@ -9,6 +9,6 @@ from apps.produtos.models import Produto
 class ProdutoAdmin(admin.ModelAdmin):
     """Listagem, filtros e busca de produtos no admin."""
 
-    list_display = ("nome", "sku", "categoria", "preco", "ativo")
+    list_display = ("nome", "sku", "codigo_barras", "categoria", "preco", "ativo")
     list_filter = ("categoria", "ativo")
-    search_fields = ("nome", "sku")
+    search_fields = ("nome", "sku", "codigo_barras")

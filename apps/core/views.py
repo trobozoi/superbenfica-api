@@ -28,10 +28,16 @@ MODULOS = (
     Modulo("Autenticação", "/api/auth/", "Login JWT, renovação e revogação de tokens, autocadastro.", "cadeado"),
     Modulo("Filiais", "/api/lojas/", "Lojas da rede, horários de funcionamento e status.", "loja"),
     Modulo("Usuários", "/api/usuarios/", "Equipe por filial com perfis de acesso.", "usuarios"),
-    Modulo("Produtos", "/api/produtos/", "Catálogo único da rede com SKU, categoria e preço.", "carrinho"),
+    Modulo("Produtos", "/api/produtos/", "Catálogo da rede com SKU, código de barras, preço e foto.", "carrinho"),
     Modulo("Estoque", "/api/estoques/", "Saldo independente por filial e ajustes com bloqueio.", "pacote"),
     Modulo("Clientes", "/api/clientes/", "Cadastro de clientes e endereços de entrega.", "endereco"),
-    Modulo("Pedidos", "/api/pedidos/", "Do pedido à entrega: separação, finalização e cancelamento.", "caminhao"),
+    Modulo("Formas de pagamento", "/api/formas-pagamento/", "Pix, cartões, dinheiro e vale-alimentação.", "cartao"),
+    Modulo(
+        "Pedidos",
+        "/api/pedidos/",
+        "Do pedido à entrega: checklist de separação, finalização e cancelamento.",
+        "caminhao",
+    ),
     Modulo("Relatórios", "/api/relatorios/vendas/", "Vendas, ranking de produtos e estoque a repor.", "grafico"),
 )
 

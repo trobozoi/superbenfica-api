@@ -10,6 +10,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from apps.core.models import TimeStampedModel
+from apps.produtos.validators import validar_codigo_barras
 
 
 class Categoria(models.TextChoices):
@@ -38,7 +39,13 @@ class Produto(TimeStampedModel):
         validators=[MinValueValidator(Decimal("0.01"))],
     )
     sku = models.CharField("SKU", max_length=30, unique=True)
+    # Opcional; quando informado é único (vários produtos podem ficar sem código).
+    codigo_barras = models.CharField(
+        "código de barras", max_length=14, blank=True, default="", validators=[validar_codigo_barras]
+    )
     ativo = models.BooleanField("ativo", default=True)
+    # Gravada só por ``apps.produtos.fotos`` (imagem validada e regravada em WebP).
+    foto = models.ImageField("foto", upload_to="produtos/", blank=True, default="")
 
     class Meta:
         db_table = "sb_produto"
@@ -51,6 +58,11 @@ class Produto(TimeStampedModel):
         ]
         constraints = [
             models.CheckConstraint(condition=models.Q(preco__gt=0), name="sb_produto_preco_positivo"),
+            models.UniqueConstraint(
+                fields=["codigo_barras"],
+                condition=~models.Q(codigo_barras=""),
+                name="sb_produto_codigo_barras_uniq",
+            ),
         ]
 
     def __str__(self) -> str:
