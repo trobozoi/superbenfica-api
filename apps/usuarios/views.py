@@ -16,6 +16,7 @@ from rest_framework_simplejwt.views import (
 
 from apps.core.mixins import LojaScopedQuerysetMixin, PermissoesPorAcaoMixin
 from apps.core.permissions import IsGestao
+from apps.core.throttling import Escopo
 from apps.usuarios.models import Usuario
 from apps.usuarios.serializers import (
     RegistroClienteSerializer,
@@ -86,16 +87,21 @@ class LoginView(TokenObtainPairView):
     """Login: emite o par de tokens com as claims de perfil."""
 
     serializer_class = TokenComPerfilSerializer
+    throttle_scope = Escopo.LOGIN
 
 
 @extend_schema(tags=[TAG_AUTH], summary="Renovar token de acesso")
 class RenovarTokenView(TokenRefreshView):
     """Troca um ``refresh`` válido por um novo ``access`` (com rotação)."""
 
+    throttle_scope = Escopo.JWT
+
 
 @extend_schema(tags=[TAG_AUTH], summary="Validar token")
 class VerificarTokenView(TokenVerifyView):
     """Indica se um token ainda é válido."""
+
+    throttle_scope = Escopo.JWT
 
 
 @extend_schema(
@@ -105,6 +111,8 @@ class VerificarTokenView(TokenVerifyView):
 )
 class LogoutView(TokenBlacklistView):
     """Revoga o token de atualização."""
+
+    throttle_scope = Escopo.JWT
 
 
 @extend_schema(
@@ -119,6 +127,7 @@ class RegistroClienteView(mixins.CreateModelMixin, generics.GenericAPIView):
     serializer_class = RegistroClienteSerializer
     permission_classes = (AllowAny,)
     authentication_classes = ()
+    throttle_scope = Escopo.REGISTRO
 
     def post(self, request: Request) -> Response:
         """Cria o cliente e retorna os dados do usuário."""

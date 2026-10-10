@@ -31,9 +31,9 @@ class SeparacaoInline(admin.TabularInline):
 class PedidoAdmin(admin.ModelAdmin):
     """Consulta de pedidos no admin."""
 
-    list_display = ("codigo", "cliente", "loja", "status", "data_criacao")
-    list_filter = ("status", "loja")
+    list_display = ("codigo", "cliente", "loja", "status", "tipo_entrega", "data_criacao")
+    list_filter = ("status", "tipo_entrega", "loja")
     search_fields = ("codigo", "cliente__nome")
-    readonly_fields = ("codigo", "status", "data_criacao", "data_atualizacao")
+    readonly_fields = ("codigo", "status", "tipo_entrega", "endereco_entrega", "data_criacao", "data_atualizacao")
     list_select_related = ("cliente", "loja")
     inlines = (ItemPedidoInline, SeparacaoInline)

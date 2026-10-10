@@ -9,12 +9,13 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
-def pedido_criado(api, usuario_cliente, loja, estoque, estoque_2, produto, produto_2):
+def pedido_criado(api, usuario_cliente, loja, estoque, estoque_2, produto, produto_2, forma_pagamento):
     """Pedido de 2x produto + 1x produto_2 feito pelo cliente."""
     resposta = api(usuario_cliente).post(
         "/api/pedidos/",
         {
             "loja": loja.pk,
+            "forma_pagamento": forma_pagamento.pk,
             "itens": [
                 {"produto": produto.pk, "quantidade": 1},
                 {"produto": produto_2.pk, "quantidade": 1},
@@ -33,13 +34,19 @@ def test_criar_pedido_baixa_estoque_e_soma_itens(pedido_criado, estoque, estoque
     assert estoque.quantidade == 8
     assert estoque_2.quantidade == 4
     assert pedido_criado.itens.count() == 2
+    assert pedido_criado.forma_pagamento.tipo == "PIX"
     assert str(pedido_criado.total) == "58.50"
 
 
-def test_estoque_insuficiente_retorna_409(api, caixa, cliente, loja, estoque, produto):
+def test_estoque_insuficiente_retorna_409(api, caixa, cliente, loja, estoque, produto, forma_pagamento):
     resposta = api(caixa).post(
         "/api/pedidos/",
-        {"cliente": cliente.pk, "loja": loja.pk, "itens": [{"produto": produto.pk, "quantidade": 11}]},
+        {
+            "cliente": cliente.pk,
+            "loja": loja.pk,
+            "forma_pagamento": forma_pagamento.pk,
+            "itens": [{"produto": produto.pk, "quantidade": 11}],
+        },
         format="json",
     )
     assert resposta.status_code == 409
@@ -47,29 +54,37 @@ def test_estoque_insuficiente_retorna_409(api, caixa, cliente, loja, estoque, pr
     assert estoque.quantidade == 10
 
 
-def test_produto_sem_estoque_na_filial(api, caixa, cliente, loja, produto):
+def test_produto_sem_estoque_na_filial(api, caixa, cliente, loja, produto, forma_pagamento):
     resposta = api(caixa).post(
         "/api/pedidos/",
-        {"cliente": cliente.pk, "loja": loja.pk, "itens": [{"produto": produto.pk, "quantidade": 1}]},
+        {
+            "cliente": cliente.pk,
+            "loja": loja.pk,
+            "forma_pagamento": forma_pagamento.pk,
+            "itens": [{"produto": produto.pk, "quantidade": 1}],
+        },
         format="json",
     )
     assert resposta.status_code == 409
 
 
-def test_funcionario_precisa_informar_cliente_e_usar_sua_filial(api, caixa, cliente, outra_loja, loja, produto):
+def test_funcionario_precisa_informar_cliente_e_usar_sua_filial(
+    api, caixa, cliente, outra_loja, loja, produto, forma_pagamento
+):
     itens = [{"produto": produto.pk, "quantidade": 1}]
-    sem_cliente = api(caixa).post("/api/pedidos/", {"loja": loja.pk, "itens": itens}, format="json")
+    base = {"forma_pagamento": forma_pagamento.pk, "itens": itens}
+    sem_cliente = api(caixa).post("/api/pedidos/", {**base, "loja": loja.pk}, format="json")
     assert sem_cliente.status_code == 400
-    outra = api(caixa).post(
-        "/api/pedidos/", {"cliente": cliente.pk, "loja": outra_loja.pk, "itens": itens}, format="json"
-    )
+    outra = api(caixa).post("/api/pedidos/", {**base, "cliente": cliente.pk, "loja": outra_loja.pk}, format="json")
     assert outra.status_code == 403
 
 
-def test_usuario_cliente_sem_cadastro(api, criar_usuario, loja, produto):
+def test_usuario_cliente_sem_cadastro(api, criar_usuario, loja, produto, forma_pagamento):
     usuario = criar_usuario("CLIENTE", email="semcadastro@teste.com")
     resposta = api(usuario).post(
-        "/api/pedidos/", {"loja": loja.pk, "itens": [{"produto": produto.pk, "quantidade": 1}]}, format="json"
+        "/api/pedidos/",
+        {"loja": loja.pk, "forma_pagamento": forma_pagamento.pk, "itens": [{"produto": produto.pk, "quantidade": 1}]},
+        format="json",
     )
     assert resposta.status_code == 400
 

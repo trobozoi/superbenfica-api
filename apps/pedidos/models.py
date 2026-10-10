@@ -2,11 +2,16 @@
 
 Fluxo de status do pedido::
 
-    PENDENTE -> EM_SEPARACAO -> SEPARADO -> FINALIZADO
-        \\____________\\_____________\\-----> CANCELADO
+    PENDENTE -> EM_SEPARACAO -> SEPARADO -> [SAIU_PARA_ENTREGA] -> FINALIZADO
+        \\____________\\_____________\\_______________\\-----> CANCELADO
 
-As transições permitidas ficam em ``TRANSICOES_PEDIDO`` e são aplicadas pelos
-serviços de ``apps.pedidos.services``.
+``SAIU_PARA_ENTREGA`` só existe na entrega em domicílio, e nela é obrigatório:
+o pedido de entrega não vai direto de SEPARADO para FINALIZADO, e o de
+retirada na loja nunca sai para entrega.
+
+As transições permitidas ficam em ``TRANSICOES_PEDIDO`` (mais a regra da forma
+de entrega em ``Pedido.pode_mudar_para``) e são aplicadas pelos serviços de
+``apps.pedidos.services``.
 """
 
 import secrets
@@ -26,6 +31,7 @@ class StatusPedido(models.TextChoices):
     PENDENTE = "PENDENTE", "Pendente"
     EM_SEPARACAO = "EM_SEPARACAO", "Em separação"
     SEPARADO = "SEPARADO", "Separado"
+    SAIU_PARA_ENTREGA = "SAIU_PARA_ENTREGA", "Saiu para entrega"
     FINALIZADO = "FINALIZADO", "Finalizado"
     CANCELADO = "CANCELADO", "Cancelado"
 
@@ -33,10 +39,18 @@ class StatusPedido(models.TextChoices):
 TRANSICOES_PEDIDO: dict[str, frozenset[str]] = {
     StatusPedido.PENDENTE: frozenset({StatusPedido.EM_SEPARACAO, StatusPedido.CANCELADO}),
     StatusPedido.EM_SEPARACAO: frozenset({StatusPedido.SEPARADO, StatusPedido.CANCELADO}),
-    StatusPedido.SEPARADO: frozenset({StatusPedido.FINALIZADO, StatusPedido.CANCELADO}),
+    StatusPedido.SEPARADO: frozenset({StatusPedido.SAIU_PARA_ENTREGA, StatusPedido.FINALIZADO, StatusPedido.CANCELADO}),
+    StatusPedido.SAIU_PARA_ENTREGA: frozenset({StatusPedido.FINALIZADO, StatusPedido.CANCELADO}),
     StatusPedido.FINALIZADO: frozenset(),
     StatusPedido.CANCELADO: frozenset(),
 }
+
+
+class TipoEntrega(models.TextChoices):
+    """Como o cliente recebe o pedido."""
+
+    RETIRADA = "RETIRADA", "Retirada na loja"
+    DOMICILIO = "DOMICILIO", "Entrega em domicílio"
 
 
 class StatusSeparacao(models.TextChoices):
@@ -61,6 +75,22 @@ class Pedido(TimeStampedModel):
     )
     loja = models.ForeignKey("filiais.Loja", verbose_name="loja", on_delete=models.PROTECT, related_name="pedidos")
     status = models.CharField("status", max_length=20, choices=StatusPedido.choices, default=StatusPedido.PENDENTE)
+    # Opcional no banco só por causa dos pedidos anteriores à forma de pagamento;
+    # a API exige a forma de pagamento em todo pedido novo.
+    forma_pagamento = models.ForeignKey(
+        "pagamentos.FormaPagamento",
+        verbose_name="forma de pagamento",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="pedidos",
+    )
+    tipo_entrega = models.CharField(
+        "tipo de entrega", max_length=20, choices=TipoEntrega.choices, default=TipoEntrega.RETIRADA
+    )
+    # Cópia do endereço no momento da compra: editar ou excluir o endereço do
+    # cliente depois não altera para onde o pedido foi entregue.
+    endereco_entrega = models.TextField("endereço de entrega", blank=True, default="")
     observacao = models.TextField("observação", blank=True, default="")
 
     class Meta:
@@ -72,6 +102,12 @@ class Pedido(TimeStampedModel):
             models.Index(fields=["loja", "status"], name="sb_pedido_loja_status_idx"),
             models.Index(fields=["data_criacao"], name="sb_pedido_data_idx"),
         ]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(tipo_entrega=TipoEntrega.DOMICILIO) | ~models.Q(endereco_entrega=""),
+                name="sb_pedido_domicilio_com_endereco",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.codigo} ({self.get_status_display()})"
@@ -82,8 +118,14 @@ class Pedido(TimeStampedModel):
         return sum((item.subtotal for item in self.itens.all()), Decimal("0.00"))
 
     def pode_mudar_para(self, novo_status: str) -> bool:
-        """Indica se a transição de status é permitida."""
-        return novo_status in TRANSICOES_PEDIDO[self.status]
+        """Indica se a transição de status é permitida para a forma de entrega do pedido."""
+        if novo_status not in TRANSICOES_PEDIDO[self.status]:
+            return False
+        if self.status == StatusPedido.SEPARADO and novo_status != StatusPedido.CANCELADO:
+            # Separado, o pedido de entrega sai para entrega; o de retirada é finalizado no caixa.
+            domicilio = self.tipo_entrega == TipoEntrega.DOMICILIO
+            return novo_status == (StatusPedido.SAIU_PARA_ENTREGA if domicilio else StatusPedido.FINALIZADO)
+        return True
 
 
 class ItemPedido(models.Model):
@@ -95,6 +137,8 @@ class ItemPedido(models.Model):
     )
     quantidade = models.PositiveIntegerField("quantidade", validators=[MinValueValidator(1)])
     preco_unitario = models.DecimalField("preço unitário", max_digits=10, decimal_places=2)
+    # Checklist do separador: marcado quando o item já foi colocado no pedido.
+    separado = models.BooleanField("separado", default=False)
 
     class Meta:
         db_table = "sb_item_pedido"

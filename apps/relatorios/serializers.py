@@ -53,6 +53,7 @@ class PedidosPorStatusSerializer(serializers.Serializer):
     PENDENTE = serializers.IntegerField()
     EM_SEPARACAO = serializers.IntegerField()
     SEPARADO = serializers.IntegerField()
+    SAIU_PARA_ENTREGA = serializers.IntegerField()
     FINALIZADO = serializers.IntegerField()
     CANCELADO = serializers.IntegerField()
 

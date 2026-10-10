@@ -85,7 +85,8 @@ Authorization: Bearer <span class="v">&lt;access&gt;</span></code></pre>
           </li>
           <li>
             <strong>Teste os endpoints</strong>
-            <span>Use <em>Try it out</em>. O token expira em 15 minutos; renove em <code>/api/auth/token/refresh/</code>.</span>
+            <span>Use <em>Try it out</em>. O token expira em 15 minutos; renove em <code>/api/auth/token/refresh/</code>.
+              Ao exceder o limite de requisições, a API responde <code>429</code> com o cabeçalho <code>Retry-After</code>.</span>
           </li>
         </ol>
       </div>
